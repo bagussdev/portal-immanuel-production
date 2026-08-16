@@ -77,25 +77,111 @@
                             <div>
                                 <div class="flex items-center justify-between gap-3"><h3 class="ip-section-title">Foto hasil</h3><span class="text-xs font-bold text-slate-400">{{ $stage->photos->count() }} foto</span></div>
                                 @if($stage->photos->isNotEmpty())
-                                    <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                        @foreach($stage->photos as $photo)
-                                            <figure class="group relative overflow-hidden rounded-xl border border-sky-100 bg-slate-100 dark:border-white/10 dark:bg-white/[.04]">
-                                                <a href="{{ route('field-jobs.stages.photos.show', [$fieldJob, $stage, $photo]) }}" target="_blank">
-                                                    <img src="{{ route('field-jobs.stages.photos.show', [$fieldJob, $stage, $photo]) }}" alt="Foto {{ $stage->label() }}" loading="lazy" class="aspect-square w-full object-cover transition duration-300 group-hover:scale-105">
-                                                </a>
-                                                <figcaption class="p-2.5 text-[11px] text-slate-500 dark:text-slate-400">
-                                                    <p class="truncate font-bold text-slate-700 dark:text-slate-200">{{ $photo->uploader?->name ?: 'Pengguna' }}</p>
-                                                    <p>{{ $photo->created_at->translatedFormat('d M Y, H:i') }}</p>
-                                                    @if($photo->caption)<p class="mt-1 line-clamp-2">{{ $photo->caption }}</p>@endif
-                                                    @if($canManage || ((int) $photo->uploaded_by === (int) auth()->id() && $isAssigned))
-                                                        <form method="POST" action="{{ route('field-jobs.stages.photos.destroy', [$fieldJob, $stage, $photo]) }}" class="mt-2" onsubmit="return confirmAndLoad('Hapus foto ini?')">
-                                                            @csrf @method('DELETE')
-                                                            <button class="font-extrabold text-red-600 hover:text-red-800">Hapus</button>
-                                                        </form>
-                                                    @endif
-                                                </figcaption>
-                                            </figure>
-                                        @endforeach
+                                    <div
+                                        x-data="{
+                                            open: false,
+                                            current: 0,
+                                            src: '',
+                                            caption: '',
+                                            meta: '',
+                                            trigger: null,
+                                            touchStart: 0,
+                                            items() { return [...this.$refs.grid.querySelectorAll('[data-lightbox-photo]')] },
+                                            showPhoto(index) {
+                                                const photos = this.items();
+                                                if (!photos.length) return;
+                                                if (!this.open) this.trigger = document.activeElement;
+                                                this.current = (index + photos.length) % photos.length;
+                                                const photo = photos[this.current];
+                                                this.src = photo.dataset.src;
+                                                this.caption = photo.dataset.caption;
+                                                this.meta = photo.dataset.meta;
+                                                this.open = true;
+                                                document.documentElement.classList.add('overflow-hidden');
+                                                this.$nextTick(() => this.$refs.closePhoto.focus());
+                                            },
+                                            closePhoto() {
+                                                this.open = false;
+                                                document.documentElement.classList.remove('overflow-hidden');
+                                                this.$nextTick(() => this.trigger?.focus());
+                                            },
+                                            nextPhoto() { this.showPhoto(this.current + 1) },
+                                            previousPhoto() { this.showPhoto(this.current - 1) }
+                                        }"
+                                        @keydown.escape.window="if (open) closePhoto()"
+                                        @keydown.arrow-right.window="if (open) nextPhoto()"
+                                        @keydown.arrow-left.window="if (open) previousPhoto()"
+                                    >
+                                        <div x-ref="grid" class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                            @foreach($stage->photos as $photo)
+                                                @php($photoUrl = route('field-jobs.stages.photos.show', [$fieldJob, $stage, $photo]))
+                                                <figure class="group relative overflow-hidden rounded-xl border border-sky-100 bg-slate-100 dark:border-white/10 dark:bg-white/[.04]">
+                                                    <button
+                                                        type="button"
+                                                        data-lightbox-photo
+                                                        data-src="{{ $photoUrl }}"
+                                                        data-caption="{{ $photo->caption }}"
+                                                        data-meta="{{ ($photo->uploader?->name ?: 'Pengguna').' · '.$photo->created_at->translatedFormat('d M Y, H:i') }}"
+                                                        @click="showPhoto({{ $loop->index }})"
+                                                        class="block w-full cursor-zoom-in overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500"
+                                                        aria-label="Buka foto {{ $loop->iteration }} secara penuh"
+                                                    >
+                                                        <img src="{{ $photoUrl }}" alt="Foto {{ $stage->label() }}" loading="lazy" class="aspect-square w-full object-cover transition duration-300 group-hover:scale-105">
+                                                    </button>
+                                                    <figcaption class="p-2.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                                        <p class="truncate font-bold text-slate-700 dark:text-slate-200">{{ $photo->uploader?->name ?: 'Pengguna' }}</p>
+                                                        <p>{{ $photo->created_at->translatedFormat('d M Y, H:i') }}</p>
+                                                        @if($photo->caption)<p class="mt-1 line-clamp-2">{{ $photo->caption }}</p>@endif
+                                                        @if($canManage || ((int) $photo->uploaded_by === (int) auth()->id() && $isAssigned))
+                                                            <form method="POST" action="{{ route('field-jobs.stages.photos.destroy', [$fieldJob, $stage, $photo]) }}" class="mt-2" onsubmit="return confirmAndLoad('Hapus foto ini?')">
+                                                                @csrf @method('DELETE')
+                                                                <button class="font-extrabold text-red-600 hover:text-red-800">Hapus</button>
+                                                            </form>
+                                                        @endif
+                                                    </figcaption>
+                                                </figure>
+                                            @endforeach
+                                        </div>
+
+                                        <template x-teleport="body">
+                                            <div
+                                                x-cloak
+                                                x-show="open"
+                                                x-transition.opacity
+                                                class="fixed inset-0 z-[100] flex items-center justify-center p-3 backdrop-blur-sm sm:p-6"
+                                                style="width: 100vw; min-height: 100vh; background-color: rgba(0, 0, 0, 0.82)"
+                                                role="dialog"
+                                                aria-modal="true"
+                                                aria-label="Pratinjau foto"
+                                                @click.self="closePhoto()"
+                                                @touchstart.passive="touchStart = $event.changedTouches[0].screenX"
+                                                @touchend.passive="Math.abs($event.changedTouches[0].screenX - touchStart) > 50 && ($event.changedTouches[0].screenX < touchStart ? nextPhoto() : previousPhoto())"
+                                            >
+                                                <div class="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-4 bg-gradient-to-b from-black/75 to-transparent px-4 py-4 text-white sm:px-6">
+                                                    <div class="min-w-0">
+                                                        <p class="truncate text-xs font-bold text-white/75" x-text="meta"></p>
+                                                    </div>
+                                                    <button x-ref="closePhoto" type="button" @click="closePhoto()" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-black/30 text-2xl text-white backdrop-blur transition hover:bg-white/15" aria-label="Tutup foto">&times;</button>
+                                                </div>
+
+                                                <div class="flex h-full w-full items-center justify-center px-1 pb-28 pt-20 sm:px-16 sm:pb-24" @click.self="closePhoto()">
+                                                    <img :src="src" :alt="caption || 'Foto hasil pekerjaan'" class="max-h-full max-w-full select-none rounded-lg object-contain shadow-2xl" @click.stop>
+                                                </div>
+
+                                                <div class="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-3 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-4 pb-20 pt-12 text-white sm:bottom-6 sm:pb-4">
+                                                    <p x-show="caption" class="max-w-xl text-center text-sm font-semibold" x-text="caption"></p>
+                                                    <div x-show="items().length > 1" class="flex items-center gap-3 rounded-full border border-white/15 bg-black/35 p-1.5 shadow-lg backdrop-blur-md">
+                                                        <button type="button" @click.stop="previousPhoto()" class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="Foto sebelumnya">
+                                                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m15 18-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                        </button>
+                                                        <span class="min-w-12 text-center text-xs font-bold text-white/80"><span x-text="current + 1"></span> / <span x-text="items().length"></span></span>
+                                                        <button type="button" @click.stop="nextPhoto()" class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="Foto berikutnya">
+                                                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m9 18 6-6-6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
                                     </div>
                                 @else
                                     <div class="mt-3 rounded-xl border border-dashed border-sky-200 p-7 text-center text-sm font-semibold text-slate-400 dark:border-white/10">Belum ada foto hasil.</div>

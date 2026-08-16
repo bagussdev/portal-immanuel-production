@@ -100,6 +100,9 @@ class FieldJobFlowTest extends TestCase
                 false,
             );
         }
+        $jobPage->assertSee('data-lightbox-photo', false)
+            ->assertSee('x-teleport="body"', false)
+            ->assertDontSee('target="_blank"', false);
 
         $this->patch(route('field-jobs.stages.update', [$job, $install]), ['status' => 'completed'])->assertRedirect();
         $this->assertSame(FieldJobStage::STATUS_COMPLETED, $install->fresh()->status);
