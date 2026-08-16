@@ -406,10 +406,10 @@
                                 <td><strong>Location</strong></td>
                                 <td>: {{ $invoice->location_event ?? '-' }}</td>
                             </tr>
-                            <tr>
+                            {{-- <tr>
                                 <td><strong>Tipe Pekerjaan</strong></td>
                                 <td>: {{ $invoice->workFlowLabel() }}</td>
-                            </tr>
+                            </tr> --}}
                         </table>
                     </td>
                     <td style="width:50%; vertical-align:top;">
