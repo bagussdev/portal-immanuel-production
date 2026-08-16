@@ -11,13 +11,13 @@
 }
 
 @layer components {
-    .ip-page { @apply mx-auto w-full max-w-[1600px] space-y-6; }
+    .ip-page { @apply mx-auto w-full max-w-[1600px] space-y-5; }
     .ip-page-header { @apply flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between; }
     .ip-kicker { @apply text-[11px] font-extrabold uppercase tracking-[.22em] text-sky-600 dark:text-red-400; }
     .ip-title { @apply mt-1 text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-3xl; }
     .ip-subtitle { @apply mt-1 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400; }
     .ip-card { @apply overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-soft dark:border-white/10 dark:bg-[#11151e]; }
-    .ip-card-body { @apply p-4 sm:p-6; }
+    .ip-card-body { @apply p-4 sm:p-5; }
     .ip-section-title { @apply text-base font-extrabold tracking-tight text-slate-900 dark:text-white; }
     .ip-label { @apply mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300; }
     .ip-input { @apply block w-full rounded-xl border-sky-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:ring-sky-500 dark:border-white/10 dark:bg-[#0b0e15] dark:text-white dark:placeholder:text-slate-600 dark:focus:border-red-500 dark:focus:ring-red-500; }

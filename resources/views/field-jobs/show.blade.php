@@ -106,10 +106,10 @@
                                 @can('uploadfieldjobphotos')
                                     <form method="POST" enctype="multipart/form-data" action="{{ route('field-jobs.stages.photos.store', [$fieldJob, $stage]) }}" class="rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-white/10 dark:bg-white/[.025]">
                                         @csrf
-                                        <label class="ip-label">Ambil atau pilih foto (maksimal 8)</label>
+                                        <label class="ip-label">Pilih foto</label>
                                         <input type="file" name="photos[]" accept="image/jpeg,image/png,image/webp" capture="environment" multiple required class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-sky-600 file:px-4 file:py-2.5 file:font-bold file:text-white hover:file:bg-sky-700 dark:text-slate-300 dark:file:bg-red-600">
                                         <label class="mt-3 block"><span class="ip-label">Catatan foto (opsional)</span><input name="caption" maxlength="255" class="ip-input" placeholder="Contoh: Hasil panggung sisi depan"></label>
-                                        <p class="mt-2 text-xs leading-5 text-slate-400">Foto dikompres otomatis dan hanya dapat dilihat anggota yang berhak.</p>
+                                        <p class="mt-2 text-xs leading-5 text-slate-400">Bisa memilih beberapa foto. Maks. 8 MB per foto; akses tetap privat.</p>
                                         <button class="ip-btn-primary mt-3">Unggah foto</button>
                                     </form>
                                 @endcan

@@ -26,14 +26,13 @@
     $workFlow = $isInvoice ? old('work_flow', $document->work_flow ?: 'install_teardown') : null;
 @endphp
 
-<form method="POST" action="{{ $action }}" id="documentForm" class="space-y-6">
+<form method="POST" action="{{ $action }}" id="documentForm" class="space-y-4">
     @csrf
     @if ($method !== 'POST')
         @method($method)
     @endif
 
-    <x-responsive-disclosure kicker="Informasi utama" title="Client & acara"
-        description="Nama client baru akan tersimpan otomatis." :mobile-open="true">
+    <x-responsive-disclosure kicker="Informasi utama" title="Client & acara" :mobile-open="true">
         <div class="grid gap-4 md:grid-cols-2">
             <label class="block text-sm font-medium text-slate-700">Nama client
                 <input name="client_name" list="clientSuggestions" required
@@ -54,7 +53,7 @@
     </x-responsive-disclosure>
 
     <x-responsive-disclosure kicker="Operasional" title="{{ $isInvoice ? 'Jadwal event' : 'Jadwal pekerjaan' }}"
-        description="Buka saat perlu mengatur lokasi, tanggal, dan alur tim lapangan." :mobile-open="$errors->hasAny(['location_event', 'event_date', 'loading_date', 'bongkaran_date', 'work_flow'])">
+        :mobile-open="$errors->hasAny(['location_event', 'event_date', 'loading_date', 'bongkaran_date', 'work_flow'])">
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Lokasi
                 <input name="location_event" value="{{ old('location_event', $document->location_event) }}"
@@ -79,11 +78,7 @@
             @if ($isInvoice)
                 <div
                     class="md:col-span-2 xl:col-span-3 rounded-2xl border border-sky-100 bg-sky-50/60 p-4 dark:border-white/10 dark:bg-white/[.035]">
-                    <div class="mb-3">
-                        <p class="text-sm font-extrabold text-slate-900 dark:text-white">Tipe pekerjaan event</p>
-                        <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Satu pilihan berlaku untuk
-                            seluruh invoice dan menentukan tahap yang diterima tim lapangan.</p>
-                    </div>
+                    <p class="mb-3 text-sm font-extrabold text-slate-900 dark:text-white">Tipe pekerjaan</p>
                     <div class="grid gap-3 sm:grid-cols-3">
                         @foreach ([
         'install_teardown' => ['Pasang & Bongkar', 'Tahap pasang/loading dan tahap bongkar.'],
@@ -110,7 +105,7 @@
     </x-responsive-disclosure>
 
     <x-responsive-disclosure kicker="Pembayaran" title="Detail rekening"
-        description="Opsional. Informasi rekening terpilih akan muncul di detail dan PDF." :mobile-open="$errors->has('bank_detail_id')">
+        :mobile-open="$errors->has('bank_detail_id')">
         <label class="block max-w-2xl text-sm font-medium text-slate-700 dark:text-slate-200">Rekening tujuan
             <select name="bank_detail_id" class="ip-input mt-1">
                 <option value="">Tanpa detail rekening</option>
@@ -124,9 +119,8 @@
         </label>
     </x-responsive-disclosure>
 
-    <x-responsive-disclosure kicker="Rincian" title="Item pekerjaan"
-        description="Geser tabel ke kanan atau kiri untuk mengisi seluruh kolom." :mobile-open="true">
-        <div class="mb-4 flex justify-end">
+    <x-responsive-disclosure kicker="Rincian" title="Item pekerjaan" :mobile-open="true">
+        <div class="mb-3 flex justify-end">
             <button type="button" id="addItem"
                 class="ip-btn border border-sky-200 bg-sky-50 text-sky-700 shadow-sm hover:bg-sky-100 dark:border-white/10 dark:bg-white/[.06] dark:text-white dark:hover:bg-white/10">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -136,14 +130,14 @@
             </button>
         </div>
         <div class="overflow-x-auto">
-            <table class="min-w-[960px] w-full text-sm">
+            <table class="w-full min-w-[760px] text-sm">
                 <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
                     <tr>
-                        <th class="pb-2 w-20">Qty</th>
+                        <th class="w-16 pb-2">Qty</th>
                         <th class="pb-2">Nama item</th>
-                        <th class="pb-2 w-28">Panjang</th>
-                        <th class="pb-2 w-60">Harga</th>
-                        <th class="pb-2 w-44 text-right">Total baris</th>
+                        <th class="w-24 pb-2">Panjang</th>
+                        <th class="w-48 pb-2">Harga</th>
+                        <th class="w-36 pb-2 text-right">Total</th>
                         <th class="w-12"></th>
                     </tr>
                 </thead>
@@ -153,17 +147,17 @@
         <x-input-error :messages="$errors->get('items')" class="mt-3" />
     </x-responsive-disclosure>
 
-    <section class="grid gap-6 lg:grid-cols-[1fr,420px]">
+    <section class="grid gap-4 lg:grid-cols-[1fr,400px]">
         <x-responsive-disclosure kicker="Keterangan" title="Catatan tambahan"
-            description="Buka hanya bila ada informasi untuk client atau tim lapangan." :mobile-open="$errors->hasAny(['notes', 'description', 'operational_notes', 'change_reason'])">
+            :mobile-open="$errors->hasAny(['notes', 'description', 'operational_notes', 'change_reason'])">
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Catatan
-                <textarea name="{{ $isInvoice ? 'notes' : 'description' }}" rows="5" class="ip-input mt-1"
+                <textarea name="{{ $isInvoice ? 'notes' : 'description' }}" rows="4" class="ip-input mt-1"
                     placeholder="Catatan untuk client atau tim internal">{{ old($isInvoice ? 'notes' : 'description', $isInvoice ? $document->notes : $document->description) }}</textarea>
             </label>
             @if ($isInvoice)
                 <label class="mt-4 block text-sm font-medium text-slate-700 dark:text-slate-200">Catatan khusus tim
                     lapangan
-                    <textarea name="operational_notes" rows="4" class="ip-input mt-1"
+                    <textarea name="operational_notes" rows="3" class="ip-input mt-1"
                         placeholder="Instruksi teknis tanpa harga, pembayaran, atau informasi keuangan">{{ old('operational_notes', $document->operational_notes) }}</textarea>
                     <span class="mt-1 block text-xs text-slate-400">Hanya catatan ini yang disalin ke halaman Mandor
                         dan User.</span>
@@ -177,8 +171,7 @@
             @endif
         </x-responsive-disclosure>
 
-        <x-responsive-disclosure kicker="Perhitungan" title="Ringkasan nilai"
-            description="Diskon, pajak, dan total invoice." :mobile-open="true">
+        <x-responsive-disclosure kicker="Perhitungan" title="Ringkasan nilai" :mobile-open="true">
             <div class="space-y-4">
                 <div class="flex min-h-6 justify-between gap-4 text-sm text-slate-500 dark:text-slate-400">
                     <span>Subtotal</span><strong id="summarySubtotal" class="text-slate-950 dark:text-white"></strong>
@@ -233,22 +226,23 @@
 
 <template id="itemTemplate">
     <tr class="item-row">
-        <td class="py-3 pr-2"><input type="number" min="0.01" step="0.01" data-name="qty"
+        <td class="py-2 pr-2"><input type="number" min="0.01" step="0.01" data-name="qty"
                 class="qty ip-input" required></td>
-        <td class="py-3 pr-2"><input data-name="item_name" class="ip-input" required></td>
-        <td class="py-3 pr-2"><input type="number" min="0" step="0.01" data-name="length"
+        <td class="py-2 pr-2"><input data-name="item_name" class="ip-input" required></td>
+        <td class="py-2 pr-2"><input type="number" min="0" step="0.01" data-name="length"
                 class="length ip-input" placeholder="Opsional"></td>
-        <td class="py-3 pr-2">
+        <td class="py-2 pr-2">
             <input data-name="unit_price" class="unit-price money ip-input text-right" required placeholder="Rp">
-            <label
-                class="mt-2 flex items-start gap-2 text-[11px] font-semibold leading-4 text-slate-500 dark:text-slate-400">
+            <label title="Gabungkan harga dengan item sebelumnya"
+                class="merge-price-control mt-2 hidden w-fit cursor-pointer items-center gap-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                 <input type="checkbox" value="1" data-name="merge_price"
-                    class="merge-price mt-0.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
-                <span>Gabung harga dengan item di atas</span>
+                    class="merge-price peer sr-only">
+                <span class="relative h-5 w-9 rounded-full bg-slate-200 transition peer-focus-visible:ring-2 peer-focus-visible:ring-sky-500 peer-checked:bg-sky-600 after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-4 dark:bg-slate-700 dark:peer-checked:bg-red-600"></span>
+                <span>Gabung harga</span>
             </label>
         </td>
-        <td class="py-3 pr-2 text-right font-extrabold row-total"></td>
-        <td class="py-3"><button type="button"
+        <td class="py-2 pr-2 text-right font-extrabold row-total"></td>
+        <td class="py-2"><button type="button"
                 class="remove-row flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-lg font-bold text-red-600 hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300"
                 aria-label="Hapus item">&times;</button></td>
     </tr>
@@ -295,11 +289,16 @@
             const allRows = [...rows.querySelectorAll('.item-row')];
             allRows.forEach((row, rowIndex) => {
                 const merge = row.querySelector('.merge-price');
+                const mergeControl = row.querySelector('.merge-price-control');
                 if (rowIndex === 0) {
                     merge.checked = false;
                     merge.disabled = true;
+                    mergeControl.classList.add('hidden');
+                    mergeControl.classList.remove('flex');
                 } else {
                     merge.disabled = false;
+                    mergeControl.classList.remove('hidden');
+                    mergeControl.classList.add('flex');
                 }
                 const isMerged = rowIndex > 0 && merge.checked;
                 const priceInput = row.querySelector('.unit-price');
@@ -315,7 +314,7 @@
                 const total = isMerged ? 0 : (hasMergedFollower ? price : qty * length * price);
                 subtotal += total;
                 row.querySelector('.row-total').textContent = total > 0 ? `Rp ${money(total)}` : (
-                    isMerged ? 'Harga digabung' : '');
+                    isMerged ? 'Digabung' : '');
             });
             const dMode = document.getElementById('discountMode').value;
             const tMode = document.getElementById('taxMode').value;

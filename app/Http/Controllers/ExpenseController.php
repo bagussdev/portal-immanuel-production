@@ -153,7 +153,6 @@ class ExpenseController extends Controller
             'period' => $period,
             'locks' => $locks,
             'stats' => $stats,
-            // >>> tambahkan ini supaya render awal juga konsisten dengan polling
             'allowActions' => $canAdd,
         ]);
     }
@@ -222,7 +221,6 @@ class ExpenseController extends Controller
         // period + locks untuk bulan yg sedang dilihat
         [$period, $locks] = $this->resolvePeriodAndLocks($month, $year);
 
-        // >>> boolean sederhana untuk kontrol tombol
         $now = now();
         $isPast = ($year < (int) $now->year) || ($year === (int) $now->year && $month < (int) $now->month);
         $stat = $period ? strtolower($period->status) : 'not_opened';
@@ -232,7 +230,7 @@ class ExpenseController extends Controller
             'expenses' => $expenses,
             'period' => $period,
             'locks' => $locks,
-            'allowActions' => $allowActions, // <— dipakai partial
+            'allowActions' => $allowActions,
             'baseOffset' => 0,
         ]);
     }

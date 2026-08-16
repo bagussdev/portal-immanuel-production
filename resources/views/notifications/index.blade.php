@@ -118,7 +118,7 @@
 
 <script>
     (() => {
-        const body = document.getElementById('notifIndexBody'); // ← PENTING: id ada
+        const body = document.getElementById('notifIndexBody');
         const idxDot = document.getElementById('idxStatusDot');
         const idxLast = document.getElementById('idxLastUpdate');
 

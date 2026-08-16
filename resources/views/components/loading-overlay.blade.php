@@ -11,7 +11,6 @@
 </div>
 
 <script>
-    // Fungsi ini akan tersedia secara global
     function showFullScreenLoader() {
         document.getElementById('loading-overlay').classList.remove('hidden');
     }

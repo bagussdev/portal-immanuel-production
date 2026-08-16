@@ -39,7 +39,6 @@ class PayrollPeriod extends Model
         return $this->hasMany(Payroll::class);
     }
 
-    // Jejak audit (opsional; sesuaikan bila tak perlu)
     public function openedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'open_by')->withDefault();

@@ -14,7 +14,6 @@
 @endphp
 
 <div id="{{ $uid }}-wrap" class="relative">
-    <!-- Toggle -->
     <button id="{{ $uid }}-toggle" type="button" class="relative p-0 focus:outline-none {{ $class }}"
         aria-label="Notifications" aria-expanded="false" aria-haspopup="true">
         <span class="inline-flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 w-9 h-9">
@@ -30,10 +29,8 @@
                  bg-red-500 text-white hidden"></span>
     </button>
 
-    <!-- Mobile overlay (fixed full-width) -->
     <div id="{{ $uid }}-overlay" class="fixed inset-0 bg-black/30 z-[200] hidden sm:hidden"></div>
 
-    <!-- Panel: mobile=fixed full width, desktop=dropdown -->
     <div id="{{ $uid }}-menu"
         class="hidden z-[201]
               fixed inset-x-2 top-14 sm:inset-auto sm:absolute sm:right-0 sm:mt-2
@@ -94,7 +91,7 @@
             elMenu.classList.remove('hidden');
             elToggle.setAttribute('aria-expanded', 'true');
             if (isMobile()) elOverlay.classList.remove('hidden');
-            poll(); // load langsung saat dibuka
+            poll();
         }
 
         function closeMenu() {
@@ -115,7 +112,6 @@
             if (e.key === 'Escape') closeMenu();
         });
 
-        // Helpers
         let latestTs = new Date(0).toISOString();
 
         function visibleIds() {
@@ -142,7 +138,6 @@
             });
         }
 
-        // Polling
         let backoff = 5000,
             MIN = 5000,
             MAX = 30000,
@@ -172,10 +167,8 @@
                 latestTs = data.latest_ts || latestTs;
                 setUnread(data.unread_count || 0);
 
-                // hapus yang hilang
                 (data.deleted || []).forEach(id => elList.querySelector(`li[data-id="${id}"]`)?.remove());
 
-                // muat created/updated + item 'top' yang belum ada di DOM
                 const domIds = new Set(Array.from(elList.querySelectorAll('li[data-id]')).map(li => parseInt(li
                     .dataset.id, 10)));
                 const missingTop = Array.isArray(data.top) ? data.top.filter(id => !domIds.has(id)) : [];
@@ -201,7 +194,6 @@
                     });
                 }
 
-                // fallback total: kalau masih kosong tapi unread>0, minta top tanpa ids
                 if (!elList.querySelector('li[data-id]') && (data.unread_count || 0) > 0) {
                     const url = new URL(ROWS_URL, window.location.origin);
                     url.searchParams.set('limit', String(LIMIT));
@@ -215,7 +207,6 @@
                     tmp.querySelectorAll('li[data-id]').forEach(li => elList.appendChild(li));
                 }
 
-                // urutkan sesuai 'top'
                 if (Array.isArray(data.top)) {
                     const map = new Map(Array.from(elList.querySelectorAll('li[data-id]')).map(li => [parseInt(
                         li.dataset.id, 10), li]));
@@ -256,7 +247,6 @@
         });
         schedule();
 
-        // Mark all read
         elMarkAll?.addEventListener('click', async () => {
             try {
                 await fetch(READALL_URL, {
@@ -272,7 +262,6 @@
             } catch {}
         });
 
-        // Delegate: mark single read
         elList.addEventListener('click', async (e) => {
             const btn = e.target.closest('[data-action="mark-read"]');
             if (!btn) return;

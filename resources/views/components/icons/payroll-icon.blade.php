@@ -7,7 +7,6 @@
                 stroke: #232323;
                 /* satu warna seperti contoh */
                 stroke-width: 1.5px;
-                /* disesuaikan dari 32->24 (0.75 * 2) */
                 stroke-linejoin: round;
                 stroke-linecap: round;
             }

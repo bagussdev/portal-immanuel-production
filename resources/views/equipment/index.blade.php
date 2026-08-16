@@ -240,7 +240,7 @@
 
                     let timer = null,
                         idle = 0;
-                    const baseInterval = 10000; // 10s — ubah jika perlu
+                    const baseInterval = 10000;
                     const maxInterval = 60000; // 60s
 
                     function nextInterval() {

@@ -312,7 +312,7 @@ class PayrollController extends Controller
 
         return view('payroll.show', [
             'payroll' => $payroll,
-            'baseItems' => $baseItems,      // <-- kirim list base
+            'baseItems' => $baseItems,
             'deductionItems' => $deductionItems,
             'month' => $r->integer('month') ?: $payroll->period?->month,
             'year' => $r->integer('year') ?: $payroll->period?->year,

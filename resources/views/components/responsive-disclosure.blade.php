@@ -3,7 +3,7 @@
     'kicker' => null,
     'description' => null,
     'mobileOpen' => false,
-    'contentClass' => 'p-4 sm:p-6',
+    'contentClass' => 'p-4 sm:p-5',
 ])
 
 <details
@@ -11,7 +11,7 @@
     data-mobile-open="{{ $mobileOpen ? 'true' : 'false' }}"
     {{ $attributes->class(['ip-card ip-disclosure']) }}
 >
-    <summary class="flex min-h-[68px] cursor-pointer list-none items-center gap-3 px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500 sm:px-6">
+    <summary class="flex min-h-16 cursor-pointer list-none items-center gap-3 px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500 sm:px-5">
         <span class="min-w-0 flex-1">
             @if ($kicker)
                 <span class="ip-kicker block">{{ $kicker }}</span>

@@ -1,6 +1,3 @@
-{{-- @php
-    dd(auth()->user()->permissions()->pluck('name'));
-@endphp --}}
 <x-app-layout>
     <x-dashboard.sidebar>
         <x-alert-information />

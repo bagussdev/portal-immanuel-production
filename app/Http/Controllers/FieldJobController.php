@@ -161,7 +161,7 @@ class FieldJobController extends Controller
         abort_unless($stage->is_active, 422, 'Tahap pekerjaan ini sudah tidak aktif.');
 
         $data = $request->validate([
-            'photos' => ['required', 'array', 'min:1', 'max:8'],
+            'photos' => ['required', 'array', 'min:1'],
             'photos.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192', 'dimensions:max_width=12000,max_height=12000'],
             'caption' => ['nullable', 'string', 'max:255'],
         ]);

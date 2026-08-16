@@ -116,7 +116,7 @@ class EquipmentController extends Controller
             'latest_ts' => $latest,
             'created' => array_values(array_unique($created)),
             'updated' => array_values(array_unique($updated)),
-            'deleted' => $deleted, // <<— sekarang terisi walau hard delete
+            'deleted' => $deleted,
         ]);
     }
 
@@ -183,11 +183,8 @@ class EquipmentController extends Controller
     public function show($id)
     {
 
-        $equipment = Equipment::with('gudang') // sesuaikan relasi
+        $equipment = Equipment::with('gudang')
             ->findOrFail($id);
-
-        // Kalau kamu belum eager load, bisa juga:
-        // $equipment->location_name = optional($equipment->locationRelation)->name;
 
         return view('equipment.show', compact('equipment'));
     }

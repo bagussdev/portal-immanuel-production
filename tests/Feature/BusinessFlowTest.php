@@ -37,6 +37,28 @@ class BusinessFlowTest extends TestCase
         }
     }
 
+    public function test_user_phone_number_is_not_limited_to_32_characters(): void
+    {
+        $master = User::where('email', 'master@immanuel.test')->firstOrFail();
+        $role = $master->role;
+        $phone = str_repeat('1234567890', 5);
+
+        $response = $this->actingAs($master)->post(route('users.store'), [
+            'name' => 'Nomor Panjang',
+            'email' => 'nomor-panjang@immanuel.test',
+            'no_telf' => $phone,
+            'role_id' => $role->id,
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+        ]);
+
+        $response->assertRedirect(route('users.index'));
+        $this->assertDatabaseHas('users', [
+            'email' => 'nomor-panjang@immanuel.test',
+            'no_telf' => $phone,
+        ]);
+    }
+
     public function test_approved_quotation_becomes_an_editable_invoice_draft_with_deductive_tax(): void
     {
         $admin = User::where('email', 'admin@immanuel.test')->firstOrFail();
@@ -188,7 +210,7 @@ class BusinessFlowTest extends TestCase
         $this->assertSame(877_500, (int) $invoice->grand_total);
         $this->get(route('invoices.edit', $invoice))
             ->assertOk()
-            ->assertSeeText('Tipe pekerjaan event')
+            ->assertSeeText('Tipe pekerjaan')
             ->assertDontSee('data-name="work_flow"', false);
     }
 

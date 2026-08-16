@@ -3,7 +3,7 @@
         <x-alert-information />
         <div class="ip-page max-w-6xl">
             <header class="ip-page-header">
-                <div><p class="ip-kicker">Keamanan</p><h1 class="ip-title">Management User</h1><p class="ip-subtitle">Kelola akun, role, status aktif, dan akses setiap pengguna dari satu tempat.</p></div>
+                <div><p class="ip-kicker">Keamanan</p><h1 class="ip-title">Management User</h1><p class="ip-subtitle">Kelola akun, role, dan status user.</p></div>
                 @can('createuser')
                     <a href="{{ route('users.create') }}" class="ip-btn-primary">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>

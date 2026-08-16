@@ -14,7 +14,6 @@ class ClientController extends Controller
 {
     use AuthorizesRequests;
 
-    /* ==== Query builder untuk index + polling (order terbaru di atas) ==== */
     protected function buildIndexQuery(Request $request)
     {
         $search = (string) $request->input('search', '');
@@ -28,10 +27,9 @@ class ClientController extends Controller
                         ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
-            ->orderByDesc('id'); // yang baru di atas (konsisten Equipment)
+            ->orderByDesc('id');
     }
 
-    /* ==== Index (seedTs untuk polling, baseOffset untuk kolom No) ==== */
     public function index(Request $request)
     {
         $this->authorize('clientmenu');
@@ -50,13 +48,11 @@ class ClientController extends Controller
             ? $query->paginate($perPage)->appends($request->all())
             : $query->get();
 
-        // latestTs untuk seed polling awal
         $rawLatest = (clone $query)
             ->select(DB::raw('GREATEST(MAX(updated_at), MAX(created_at)) as ts'))
             ->value('ts');
         $latestTs = $rawLatest ? Carbon::parse($rawLatest)->toIso8601String() : now()->toIso8601String();
 
-        // base offset untuk kolom "No"
         $baseOffset = ($clients instanceof LengthAwarePaginator)
             ? (($clients->currentPage() - 1) * $clients->perPage())
             : 0;
@@ -64,31 +60,27 @@ class ClientController extends Controller
         return view('client.index', compact('clients', 'search', 'perPage', 'latestTs', 'baseOffset'));
     }
 
-    /* ==== POLLING: heartbeat changes (JSON) — gaya Equipment ==== */
     public function changes(Request $request)
     {
         $this->authorize('clientmenu');
 
         $sinceIso = (string) $request->query('since', '');
         $since = $sinceIso ? Carbon::parse($sinceIso) : Carbon::now()->subYears(10);
-        $since2 = (clone $since)->subSeconds(2); // anti-miss window (match Equipment)
+        $since2 = (clone $since)->subSeconds(2);
 
         $base = $this->buildIndexQuery($request);
 
-        // CREATED: dibuat setelah since2
         $created = (clone $base)
             ->where('created_at', '>=', $since2)
             ->pluck('id')
             ->all();
 
-        // UPDATED: diubah setelah since2 tapi bukan yang baru dibuat
         $updated = (clone $base)
             ->where('updated_at', '>=', $since2)
             ->where('created_at', '<', $since2)
             ->pluck('id')
             ->all();
 
-        // DELETED: dari visible[] tapi tak lagi ada di query (hard delete / tak match filter)
         $visible = array_values(array_filter((array) $request->query('visible'), fn ($v) => is_numeric($v)));
         $deleted = [];
         if (! empty($visible)) {
@@ -96,7 +88,6 @@ class ClientController extends Controller
             $deleted = array_values(array_diff($visible, $existingVisible));
         }
 
-        // latest_ts untuk seed berikutnya
         $rawLatest = (clone $base)
             ->select(DB::raw('GREATEST(MAX(updated_at), MAX(created_at)) as ts'))
             ->value('ts');
@@ -110,7 +101,6 @@ class ClientController extends Controller
         ]);
     }
 
-    /* ==== POLLING: render partial rows (HTML <tr>…) ==== */
     public function rows(Request $request)
     {
         $this->authorize('clientmenu');
@@ -124,8 +114,6 @@ class ClientController extends Controller
 
         return view('client._rows', compact('clients'));
     }
-
-    /* ==== CRUD (mengikuti punyamu) ==== */
 
     public function create()
     {
@@ -171,19 +159,16 @@ class ClientController extends Controller
 
         $client = Client::findOrFail($id);
 
-        // Per-page terpisah; dukung "all"
         $invPerPage = $request->input('invoice_per_page', 5);
         $quoPerPage = $request->input('quotation_per_page', 5);
         $invPerPage = $invPerPage === 'all' ? 100000 : (int) $invPerPage;
         $quoPerPage = $quoPerPage === 'all' ? 100000 : (int) $quoPerPage;
 
-        // INVOICE: nomor, tanggal, total sesuai permintaanmu
         $invoices = $client->invoices()
             ->orderByDesc('created_at')
             ->paginate($invPerPage, ['*'], 'invoice_page')
             ->appends($request->except('invoice_page'));
 
-        // QUOTATION: nomor, tanggal, sisa
         $quotations = $client->quotations()
             ->orderByDesc('created_at')
             ->paginate($quoPerPage, ['*'], 'quotation_page')
@@ -218,7 +203,7 @@ class ClientController extends Controller
     public function destroy(Client $client)
     {
         $this->authorize('deleteclient');
-        $client->delete(); // hard delete → terdeteksi oleh 'deleted'
+        $client->delete();
 
         return redirect()->route('client.index')->with('success', 'Client successfully deleted.');
     }

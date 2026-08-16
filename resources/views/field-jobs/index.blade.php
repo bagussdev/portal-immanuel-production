@@ -6,7 +6,7 @@
                 <div>
                     <p class="ip-kicker">Operasional lapangan</p>
                     <h1 class="ip-title">Jadwal Event</h1>
-                    <p class="ip-subtitle">Jadwal operasional, penugasan, progres, dan dokumentasi pasang, bongkar, serta pekerjaan sekali jalan.</p>
+                    <p class="ip-subtitle">Jadwal, tim, progres, dan dokumentasi lapangan.</p>
                 </div>
             </header>
 

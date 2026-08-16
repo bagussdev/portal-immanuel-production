@@ -57,7 +57,7 @@ class FieldJobFlowTest extends TestCase
         $this->get(route('invoices.show', $invoice))->assertForbidden();
     }
 
-    public function test_admin_assigns_a_team_and_assigned_user_can_upload_and_complete_with_photo(): void
+    public function test_admin_assigns_a_team_and_assigned_user_can_upload_multiple_photos_and_complete_the_job(): void
     {
         Storage::fake('local');
         $admin = $this->user('admin');
@@ -80,15 +80,26 @@ class FieldJobFlowTest extends TestCase
 
         $this->actingAs($user)->get(route('field-jobs.index'))->assertOk()->assertSee($job->job_number);
         $this->get(route('field-jobs.show', $job))->assertOk()->assertSee('Instruksi aman untuk tim.');
+        $photos = collect(range(1, 9))
+            ->map(fn (int $number) => UploadedFile::fake()->image("hasil-pasang-{$number}.jpg", 320, 240))
+            ->all();
         $this->post(route('field-jobs.stages.photos.store', [$job, $install]), [
-            'photos' => [UploadedFile::fake()->image('hasil-pasang.jpg', 1200, 800)],
+            'photos' => $photos,
             'caption' => 'Hasil pasang sisi depan',
         ])->assertRedirect();
 
         $install->refresh();
         $this->assertSame(FieldJobStage::STATUS_IN_PROGRESS, $install->status);
+        $this->assertCount(9, $install->photos);
         $photo = $install->photos()->firstOrFail();
         Storage::disk('local')->assertExists($photo->path);
+        $jobPage = $this->get(route('field-jobs.show', $job))->assertOk();
+        foreach ($install->photos as $uploadedPhoto) {
+            $jobPage->assertSee(
+                route('field-jobs.stages.photos.show', [$job, $install, $uploadedPhoto]),
+                false,
+            );
+        }
 
         $this->patch(route('field-jobs.stages.update', [$job, $install]), ['status' => 'completed'])->assertRedirect();
         $this->assertSame(FieldJobStage::STATUS_COMPLETED, $install->fresh()->status);

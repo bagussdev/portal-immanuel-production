@@ -110,7 +110,12 @@
                     <button type="button" class="rounded-xl border border-sky-200 bg-white p-2.5 text-sky-800 shadow-sm hover:bg-sky-50 dark:border-white/10 dark:bg-white/[.06] dark:text-white dark:hover:bg-white/10 lg:hidden" @click.stop="sidebarOpen = true" aria-label="Buka menu">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h10" /></svg>
                     </button>
-                    <div class="min-w-0"><p class="truncate text-sm font-extrabold text-slate-900 dark:text-white">{{ now()->translatedFormat('l, d F Y') }}</p><p class="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block">Kelola pekerjaan hari ini dengan ringkas.</p></div>
+                    <div class="min-w-0">
+                        <p class="truncate text-xs font-bold text-slate-900 dark:text-white sm:text-sm sm:font-extrabold">
+                            <span class="sm:hidden">{{ now()->format('d/m/Y') }}</span>
+                            <span class="hidden sm:inline">{{ now()->translatedFormat('l, d F Y') }}</span>
+                        </p>
+                    </div>
                 </div>
                 <div class="flex items-center gap-2 sm:gap-3">
                     <button type="button" class="ip-theme-toggle" @click="toggleTheme()" :aria-label="theme === 'dark' ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'" :title="theme === 'dark' ? 'Mode terang' : 'Mode gelap'">

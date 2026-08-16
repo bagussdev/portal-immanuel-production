@@ -40,7 +40,7 @@ class ExpensePeriod extends Model
      */
     public static function bump(bool $closeReopen = false): array
     {
-        $now = now(); // pakai timezone app
+        $now = now();
         $curY = (int) $now->year;
         $curM = (int) $now->month;
 
@@ -61,9 +61,7 @@ class ExpensePeriod extends Model
                 'updated_at' => $now,
             ]);
 
-        // Pastikan period bulan berjalan ada; jika belum → OPEN
-        // NOTE: sesuaikan urutan param ofYm dgn punyamu: (month, year) atau (year, month).
-        $current = static::ofYm($curM, $curY)->first(); // <— pakai (month, year) sesuai controller awalmu
+        $current = static::ofYm($curM, $curY)->first();
         $opened = false;
 
         if (! $current) {
