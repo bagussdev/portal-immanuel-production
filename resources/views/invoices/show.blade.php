@@ -103,7 +103,7 @@
                                     <tr>
                                         <td class="font-bold text-slate-900 dark:text-white">{{ $item->item_name }}</td>
                                         <td>{{ (float) $item->qty > 0 ? (float) $item->qty : '' }}</td>
-                                        <td>{{ (float) $item->length > 0 ? (float) $item->length : '' }}</td>
+                                        <td>{{ filled($item->length) && (float) $item->length > 0 ? (float) $item->length : '' }}</td>
                                         @if ($item->price_group)
                                             @if (! isset($renderedPriceGroups[$item->price_group]))
                                                 @php($renderedPriceGroups[$item->price_group] = true)

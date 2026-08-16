@@ -439,7 +439,7 @@
                         <td>{{ $i + 1 }}</td>
                         <td>{{ $item->item_name }}</td>
                         <td>{{ (float) $item->qty > 0 ? rtrim(rtrim(number_format((float) $item->qty, 2, ',', '.'), '0'), ',') : '' }}</td>
-                        <td>{{ (float) $item->length > 0 ? rtrim(rtrim(number_format((float) $item->length, 2, ',', '.'), '0'), ',') : '' }}</td>
+                        <td>{{ filled($item->length) && (float) $item->length > 0 ? rtrim(rtrim(number_format((float) $item->length, 2, ',', '.'), '0'), ',') : '' }}</td>
                         @if ($item->price_group)
                             @if (! isset($renderedPriceGroups[$item->price_group]))
                                 @php($renderedPriceGroups[$item->price_group] = true)

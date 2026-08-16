@@ -196,7 +196,7 @@ class QuotationController extends Controller
         $leaderIndex = null;
         foreach ($data['items'] as $row) {
             $qty = (float) $row['qty'];
-            $length = isset($row['length']) && $row['length'] !== '' ? (float) $row['length'] : null;
+            $length = filled($row['length'] ?? null) ? (float) $row['length'] : null;
             $unitPrice = DocumentTotals::money($row['unit_price']);
             $mergePrice = filter_var($row['merge_price'] ?? false, FILTER_VALIDATE_BOOLEAN);
 

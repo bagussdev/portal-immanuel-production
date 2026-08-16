@@ -208,6 +208,7 @@ class BusinessFlowTest extends TestCase
         $this->assertSame('PT Client Baru', $invoice->client->name);
         $this->assertSame(Invoice::FLOW_ONE_WAY, $invoice->work_flow);
         $this->assertSame(877_500, (int) $invoice->grand_total);
+        $this->assertNull($invoice->items->first()->length);
         $this->get(route('invoices.edit', $invoice))
             ->assertOk()
             ->assertSeeText('Tipe pekerjaan')
@@ -236,6 +237,7 @@ class BusinessFlowTest extends TestCase
         $response->assertRedirect(route('quotations.show', $quotation));
         $this->assertSame($bankDetail->id, $quotation->bank_detail_id);
         $this->assertSame(23_000_000, (int) $quotation->subtotal);
+        $this->assertTrue($quotation->items->every(fn ($item) => $item->length === null));
         $this->assertSame(20_000_000, (int) $quotation->items[0]->total);
         $this->assertSame(0, (int) $quotation->items[1]->total);
         $this->assertSame($quotation->items[0]->price_group, $quotation->items[1]->price_group);
@@ -336,6 +338,9 @@ class BusinessFlowTest extends TestCase
 
         $this->actingAs($admin)->patch(route('payroll.pay', $ownSlip))->assertRedirect();
         $this->assertSame(Payroll::STATUS_PAID, $ownSlip->fresh()->status);
+        $this->get(route('payroll.slip.pdf', $ownSlip))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
 
         $this->patch(route('payroll.period.close', $period))->assertRedirect();
         $this->assertSame(PayrollPeriod::STATUS_OPEN, $period->fresh()->status);
