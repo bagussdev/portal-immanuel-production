@@ -1,0 +1,42 @@
+<?php
+
+return [
+    'accepted' => ':attribute harus disetujui.',
+    'array' => ':attribute harus berupa daftar.',
+    'boolean' => ':attribute harus bernilai ya atau tidak.',
+    'confirmed' => 'Konfirmasi :attribute tidak cocok.',
+    'current_password' => 'Password saat ini tidak benar.',
+    'date' => ':attribute harus berupa tanggal yang valid.',
+    'email' => ':attribute harus berupa alamat email yang valid.',
+    'exists' => ':attribute yang dipilih tidak ditemukan.',
+    'file' => ':attribute harus berupa berkas.',
+    'in' => ':attribute yang dipilih tidak valid.',
+    'integer' => ':attribute harus berupa angka bulat.',
+    'max' => [
+        'numeric' => ':attribute maksimal :max.',
+        'file' => 'Ukuran :attribute maksimal :max KB.',
+        'string' => ':attribute maksimal :max karakter.',
+        'array' => ':attribute maksimal berisi :max data.',
+    ],
+    'min' => [
+        'numeric' => ':attribute minimal :min.',
+        'file' => 'Ukuran :attribute minimal :min KB.',
+        'string' => ':attribute minimal :min karakter.',
+        'array' => ':attribute minimal berisi :min data.',
+    ],
+    'mimes' => ':attribute harus berformat: :values.',
+    'numeric' => ':attribute harus berupa angka.',
+    'required' => ':attribute wajib diisi.',
+    'string' => ':attribute harus berupa teks.',
+    'unique' => ':attribute sudah digunakan.',
+    'after_or_equal' => ':attribute harus sama dengan atau setelah :date.',
+    'attributes' => [
+        'name' => 'Nama', 'email' => 'Email', 'password' => 'Password',
+        'password_confirmation' => 'Konfirmasi password', 'client_name' => 'Nama client',
+        'bank_detail_id' => 'Detail rekening', 'event_name' => 'Nama acara',
+        'location_event' => 'Lokasi', 'event_date' => 'Tanggal acara',
+        'loading_date' => 'Jadwal loading', 'bongkaran_date' => 'Jadwal bongkar',
+        'items' => 'Item pekerjaan', 'amount' => 'Nominal', 'paid_at' => 'Tanggal pembayaran',
+        'attachment' => 'Lampiran', 'notes' => 'Catatan', 'role_id' => 'Role',
+    ],
+];
