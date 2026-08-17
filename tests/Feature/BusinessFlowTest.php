@@ -260,10 +260,15 @@ class BusinessFlowTest extends TestCase
             && strpos($invoiceHtml, 'Detail Rekening') < strpos($invoiceHtml, 'Ringkasan')
         );
 
+        $quotation->update(['description' => 'Catatan quotation profesional.']);
         $quotation->load(['client', 'bankDetail', 'items']);
         $quotationHtml = view('quotations.pdf', compact('quotation'))->render();
-        $this->assertStringContainsString('immanuel-production-legacy-logo.png', $quotationHtml);
-        $this->assertStringNotContainsString(public_path('assets/logo.png'), $quotationHtml);
+        $this->assertStringContainsString(public_path('assets/logo.png'), $quotationHtml);
+        $this->assertStringNotContainsString('immanuel-production-legacy-logo.png', $quotationHtml);
+        $this->assertTrue(
+            strpos($quotationHtml, 'Catatan quotation profesional.') < strpos($quotationHtml, 'Detail Rekening')
+            && strpos($quotationHtml, 'Detail Rekening') < strpos($quotationHtml, 'Ringkasan')
+        );
     }
 
     public function test_admin_can_manage_bank_details_but_cannot_delete_them(): void

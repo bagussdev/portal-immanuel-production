@@ -17,8 +17,7 @@
         body {
             margin: 0;
             height: 100%;
-            line-height: 0.8;
-            /* atur rapatnya paragraf */
+            line-height: 1.2;
             letter-spacing: 0;
         }
 
@@ -43,10 +42,6 @@
             src: url("{{ storage_path('fonts/Poppins-Bold.ttf') }}") format('truetype');
         }
 
-        body {
-            font-family: 'poppins', sans-serif;
-        }
-
         strong,
         b,
         h1,
@@ -63,10 +58,12 @@
         }
 
         :root {
-            --red: #db0000;
-            --line: #d7d7d7;
-            --muted: #555;
-            --soft: #f6f6f6;
+            --accent: #334155;
+            --accent-strong: #1e293b;
+            --accent-soft: #f1f5f9;
+            --line: #cbd5e1;
+            --muted: #64748b;
+            --soft: #f8fafc;
         }
 
         /* ====== HEADER (repeat tiap halaman) ====== */
@@ -88,7 +85,7 @@
         .hdr-row {
             display: table;
             width: 100%;
-            border-bottom: 2px solid #000;
+            border-bottom: 2px solid var(--accent-strong);
             padding-bottom: 10px;
             margin-top: 30px;
         }
@@ -117,8 +114,8 @@
         }
 
         .hdr-right .addr {
-            color: #555;
-            line-height: 1;
+            color: var(--muted);
+            line-height: 1.25;
         }
 
         /* ====== FOOTER (repeat tiap halaman) ====== */
@@ -131,7 +128,6 @@
             /* harus sama/kurang dari @page margin-bottom */
             background: #fff;
             border-top: 1px solid var(--line);
-            text-align: center;
             color: #444;
             font-size: 11px;
             text-align: center;
@@ -177,7 +173,7 @@
             font-size: 22px;
             font-weight: 800;
             letter-spacing: 1px;
-            color: var(--red);
+            color: var(--accent-strong);
             margin: 16px 0 6px;
             display: inline-block;
             position: relative;
@@ -191,14 +187,14 @@
             bottom: -3mm;
             width: 100%;
             height: 1mm;
-            background: var(--red);
+            background: var(--accent);
             opacity: .15;
         }
 
         .quotation-sub {
             color: #666;
             font-size: 10px;
-            margin: 0px 0 10px;
+            margin: 0 0 10px;
         }
 
         /* ====== INFO ====== */
@@ -237,13 +233,13 @@
         /* repeat tiap halaman */
         table.items th,
         table.items td {
-            border: 1px solid #999;
+            border: 1px solid var(--line);
             padding: 6px 8px;
             text-align: left;
         }
 
         table.items th {
-            background-color: var(--red);
+            background-color: var(--accent);
             color: #fff;
             text-transform: uppercase;
             letter-spacing: .2px;
@@ -266,8 +262,8 @@
         }
 
         .summary-title {
-            background: #ffecec;
-            color: #7a0000;
+            background: var(--accent-soft);
+            color: var(--accent-strong);
             font-weight: 700;
             padding: 8px 10px;
             border-bottom: 1px solid var(--line);
@@ -309,13 +305,13 @@
             float: left;
             margin-top: 14px;
             padding: 10px 12px;
-            border-left: 4px solid var(--red);
+            border-left: 4px solid #64748b;
             background: var(--soft);
             line-height: 1.25;
             box-sizing: border-box;
         }
 
-        .bank-detail-title { color: var(--red); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 6px; }
+        .bank-detail-title { color: var(--accent-strong); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 6px; }
         .bank-detail table { width: 100%; border-collapse: collapse; }
         .bank-detail td { padding: 2px 0; vertical-align: top; }
         .bank-detail td:first-child { width: 82px; color: var(--muted); }
@@ -324,11 +320,15 @@
         /* ====== NOTES ====== */
         .notes {
             clear: both;
-            margin-top: 14px;
+            margin-top: 12px;
+            margin-bottom: 0;
             background: var(--soft);
-            border: 1px dashed var(--line);
+            border: 1px solid var(--line);
+            border-left: 4px solid #94a3b8;
             padding: 10px 12px;
             border-radius: 6px;
+            color: #334155;
+            page-break-inside: avoid;
         }
     </style>
 </head>
@@ -344,7 +344,7 @@
         <div class="inner">
             <div class="hdr-row">
                 <div class="hdr-left">
-                    <img src="{{ public_path('assets/brand/immanuel-production-legacy-logo.png') }}" alt="Logo">
+                    <img src="{{ public_path('assets/logo.png') }}" alt="Logo">
                 </div>
                 <div class="hdr-right">
                     <div class="title">IMMANUEL PRODUCTION</div>
@@ -366,8 +366,8 @@
             <br>
             <strong>IMMANUEL PRODUCTION</strong> &copy; {{ date('Y') }} <br>
             Email: <a href="mailto:admin@immanuelproduction.com">admin@immanuelproduction.com</a>
-            • Telp: 0818550837
-            • <strong>www.immanuelproduction.com</strong>
+            - Telp: 0818550837
+            - <strong>www.immanuelproduction.com</strong>
         </div>
     </div>
 
@@ -453,6 +453,14 @@
             </tbody>
         </table>
 
+        {{-- NOTES --}}
+        @if (!empty($quotation->description))
+            <div class="notes">
+                <strong>Catatan</strong><br>
+                {!! nl2br(e($quotation->description)) !!}
+            </div>
+        @endif
+
         @if ($quotation->bankDetail)
             <div class="bank-detail">
                 <div class="bank-detail-title">Detail Rekening - {{ $quotation->bankDetail->label }}</div>
@@ -490,14 +498,6 @@
                 </tr>
             </table>
         </div>
-
-        {{-- NOTES --}}
-        @if (!empty($quotation->description))
-            <div class="notes">
-                <strong>Catatan:</strong><br>
-                {!! nl2br(e($quotation->description)) !!}
-            </div>
-        @endif
 
     </div>
 </body>
