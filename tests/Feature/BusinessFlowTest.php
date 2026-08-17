@@ -241,14 +241,37 @@ class BusinessFlowTest extends TestCase
         $this->assertSame(20_000_000, (int) $quotation->items[0]->total);
         $this->assertSame(0, (int) $quotation->items[1]->total);
         $this->assertSame($quotation->items[0]->price_group, $quotation->items[1]->price_group);
+        $quotation->update(['location_event' => 'Denpasar']);
 
         $this->get(route('quotations.show', $quotation))->assertOk()->assertSee('Zakharia Sugito Kurniawan');
-        $this->get(route('quotations.export.pdf', $quotation))->assertOk();
+        $quotationPdf = $this->get(route('quotations.export.pdf', $quotation))->assertOk();
+        $this->assertStringContainsString(
+            'Quotation Bapak Widhi di Denpasar '.str($quotation->quotation_number)->afterLast('/').' '.$quotation->quotation_date->format('d-m-Y').'.pdf',
+            (string) $quotationPdf->headers->get('content-disposition'),
+        );
         $invoice = app(ApproveQuotation::class)->handle($quotation, $admin->id)->fresh();
+        $invoice->update([
+            'invoice_number' => 'IMP/08/26/INV0001',
+            'issue_date' => today(),
+        ]);
         $this->assertSame($bankDetail->id, $invoice->bank_detail_id);
         $this->assertSame(23_000_000, (int) $invoice->subtotal);
         $this->assertSame($invoice->items[0]->price_group, $invoice->items[1]->price_group);
         $this->get(route('invoices.show', $invoice))->assertOk()->assertSee('0490392947');
+        $invoicePdf = $this->get(route('invoices.export.pdf', $invoice))->assertOk();
+        $this->assertStringContainsString(
+            'Invoice Bapak Widhi di Denpasar INV0001 '.today()->format('d-m-Y').'.pdf',
+            (string) $invoicePdf->headers->get('content-disposition'),
+        );
+
+        $invoice->update(['location_event' => null]);
+        $invoicePdfWithoutLocation = $this->get(route('invoices.export.pdf', $invoice))->assertOk();
+        $filenameWithoutLocation = (string) $invoicePdfWithoutLocation->headers->get('content-disposition');
+        $this->assertStringContainsString(
+            'Invoice Bapak Widhi INV0001 '.today()->format('d-m-Y').'.pdf',
+            $filenameWithoutLocation,
+        );
+        $this->assertStringNotContainsString('Bapak Widhi di ', $filenameWithoutLocation);
 
         $invoice->update(['notes' => 'Catatan invoice profesional.']);
         $invoice->load(['client', 'bankDetail', 'items', 'payments']);

@@ -160,9 +160,17 @@ class QuotationController extends Controller
     {
         $this->authorize('quotationmenu');
         $quotation->load(['client', 'bankDetail', 'items']);
+        $clientName = Str::of($quotation->client?->name ?: 'Client')
+            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->value();
+        $location = Str::of($quotation->location_event ?: '')
+            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->value();
+        $locationPart = $location !== '' ? " di {$location}" : '';
+        $documentCode = Str::afterLast((string) $quotation->quotation_number, '/') ?: 'QTN'.$quotation->id;
+        $documentDate = ($quotation->quotation_date ?: $quotation->created_at ?: now())->format('d-m-Y');
+        $filename = "Quotation {$clientName}{$locationPart} {$documentCode} {$documentDate}.pdf";
 
         return Pdf::loadView('quotations.pdf', compact('quotation'))
-            ->stream('Quotation-'.str_replace('/', '-', $quotation->quotation_number).'.pdf');
+            ->stream($filename);
     }
 
     private function validated(Request $request): array

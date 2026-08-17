@@ -222,9 +222,19 @@ class InvoiceController extends Controller
     {
         $this->authorize('invoicemenu');
         $invoice->load(['client', 'bankDetail', 'items', 'payments' => fn ($q) => $q->whereNull('voided_at')->orderBy('paid_at')]);
+        $clientName = Str::of($invoice->client?->name ?: 'Client')
+            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->value();
+        $location = Str::of($invoice->location_event ?: '')
+            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->value();
+        $locationPart = $location !== '' ? " di {$location}" : '';
+        $documentCode = $invoice->invoice_number
+            ? Str::afterLast($invoice->invoice_number, '/')
+            : 'INV-DRAFT-'.$invoice->id;
+        $documentDate = ($invoice->issue_date ?: $invoice->created_at ?: now())->format('d-m-Y');
+        $filename = "Invoice {$clientName}{$locationPart} {$documentCode} {$documentDate}.pdf";
 
         return Pdf::loadView('invoices.pdf', compact('invoice'))
-            ->stream('Invoice-'.str_replace('/', '-', $invoice->invoice_number ?: 'DRAFT-'.$invoice->id).'.pdf');
+            ->stream($filename);
     }
 
     public function void(Request $request, Invoice $invoice)
