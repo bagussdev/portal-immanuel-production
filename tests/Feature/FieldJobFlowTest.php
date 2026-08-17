@@ -203,6 +203,35 @@ class FieldJobFlowTest extends TestCase
         $this->assertSame([Invoice::FLOW_INSTALL_ONLY], $job->items()->pluck('work_flow')->unique()->values()->all());
     }
 
+    public function test_teardown_can_be_completed_without_a_photo_but_install_still_requires_one(): void
+    {
+        $admin = $this->user('admin');
+        $invoice = $this->mixedDraft($admin);
+
+        $this->actingAs($admin)->post(route('invoices.issue', $invoice), [
+            'issue_date' => today()->toDateString(),
+        ])->assertRedirect();
+
+        $job = FieldJob::where('invoice_id', $invoice->id)->firstOrFail();
+        $install = $job->stages()->where('type', FieldJobStage::TYPE_INSTALL)->firstOrFail();
+        $teardown = $job->stages()->where('type', FieldJobStage::TYPE_TEARDOWN)->firstOrFail();
+
+        $this->get(route('field-jobs.show', $job))
+            ->assertOk()
+            ->assertSee('Foto Bongkar bersifat opsional.');
+
+        $this->patch(route('field-jobs.stages.update', [$job, $install]), [
+            'status' => FieldJobStage::STATUS_COMPLETED,
+        ])->assertRedirect()->assertSessionHas('error');
+        $this->assertSame(FieldJobStage::STATUS_PENDING, $install->fresh()->status);
+
+        $this->patch(route('field-jobs.stages.update', [$job, $teardown]), [
+            'status' => FieldJobStage::STATUS_COMPLETED,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame(FieldJobStage::STATUS_COMPLETED, $teardown->fresh()->status);
+        $this->assertSame(0, $teardown->photos()->count());
+    }
+
     private function user(string $role): User
     {
         return User::where('email', "{$role}@immanuel.test")->firstOrFail();

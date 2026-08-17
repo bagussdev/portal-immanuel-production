@@ -122,7 +122,11 @@ class FieldJobController extends Controller
         if ($data['status'] === FieldJobStage::STATUS_PENDING && ! $request->user()->canManageAllFieldJobs()) {
             abort(403, 'Hanya Master, Admin, atau Mandor yang dapat membuka kembali pekerjaan.');
         }
-        if ($data['status'] === FieldJobStage::STATUS_COMPLETED && ! $stage->photos()->exists()) {
+        if (
+            $data['status'] === FieldJobStage::STATUS_COMPLETED
+            && $stage->type !== FieldJobStage::TYPE_TEARDOWN
+            && ! $stage->photos()->exists()
+        ) {
             return back()->with('error', 'Unggah minimal satu foto hasil sebelum tahap ditandai selesai.');
         }
 
@@ -211,7 +215,11 @@ class FieldJobController extends Controller
         $isManager = $request->user()->canManageAllFieldJobs();
         abort_unless($isManager || ((int) $photo->uploaded_by === (int) $request->user()->id && $this->isAssigned($request->user(), $stage)), 403);
 
-        if ($stage->status === FieldJobStage::STATUS_COMPLETED && $stage->photos()->count() <= 1) {
+        if (
+            $stage->status === FieldJobStage::STATUS_COMPLETED
+            && $stage->type !== FieldJobStage::TYPE_TEARDOWN
+            && $stage->photos()->count() <= 1
+        ) {
             return back()->with('error', 'Buka kembali tahap pekerjaan sebelum menghapus satu-satunya foto hasil.');
         }
 

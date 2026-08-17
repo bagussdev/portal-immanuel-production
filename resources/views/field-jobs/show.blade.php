@@ -240,7 +240,11 @@
                                 @can('updatefieldjobstatus')
                                     <div class="rounded-xl bg-sky-950 p-4 text-white dark:bg-black">
                                         <h3 class="font-extrabold">Perbarui progres</h3>
-                                        <p class="mt-1 text-xs leading-5 text-slate-400">Minimal satu foto diperlukan sebelum pekerjaan dapat diselesaikan.</p>
+                                        <p class="mt-1 text-xs leading-5 text-slate-400">
+                                            {{ $stage->type === FieldJobStage::TYPE_TEARDOWN
+                                                ? 'Foto Bongkar bersifat opsional.'
+                                                : 'Minimal satu foto diperlukan sebelum pekerjaan dapat diselesaikan.' }}
+                                        </p>
                                         @if($stage->status === FieldJobStage::STATUS_PENDING)
                                             <form method="POST" action="{{ route('field-jobs.stages.update', [$fieldJob, $stage]) }}" class="mt-3">@csrf @method('PATCH')<input type="hidden" name="status" value="in_progress"><button class="ip-btn w-full bg-white text-slate-950 hover:bg-slate-100">Mulai pekerjaan</button></form>
                                         @elseif($stage->status === FieldJobStage::STATUS_IN_PROGRESS)
