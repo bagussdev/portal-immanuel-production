@@ -33,7 +33,7 @@
                         <div>
                             <x-input-label for="nomor_polisi" :value="'Nomor Polisi'" />
                             <x-text-input id="nomor_polisi" name="nomor_polisi" type="text" class="mt-1 block w-full"
-                                :value="old('nomor_polisi')" maxlength="8" required />
+                                :value="old('nomor_polisi')" maxlength="" required />
                             <x-input-error :messages="$errors->get('nomor_polisi')" class="mt-2" />
                         </div>
                         <div>
