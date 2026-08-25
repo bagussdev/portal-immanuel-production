@@ -70,18 +70,28 @@
             <template x-for="(location, locationIndex) in locations" :key="location.key">
                 <article class="rounded-2xl border border-sky-100 bg-sky-50/35 p-4 dark:border-white/10 dark:bg-white/[.025]">
                     <div class="flex items-center justify-between gap-3">
-                        <h3 class="font-extrabold text-slate-900 dark:text-white" x-text="`Lokasi ${locationIndex + 1}`"></h3>
-                        <button type="button" x-show="locations.length > 1" @click="removeLocation(locationIndex)" class="text-xs font-extrabold text-red-600">Hapus lokasi</button>
+                        <div>
+                            <h3 class="font-extrabold text-slate-900 dark:text-white" x-text="`Lokasi ${locationIndex + 1}`"></h3>
+                            <p x-show="locationIndex > 0 && applyAllLocations" class="mt-1 text-[11px] font-bold" :class="hasLocationOverrides(location) ? 'text-amber-600' : 'text-emerald-600'" x-text="hasLocationOverrides(location) ? 'Memakai pengaturan khusus' : 'Mengikuti Lokasi 1'"></p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button type="button" x-show="locationIndex > 0 && applyAllLocations && hasLocationOverrides(location)" @click="followMaster(locationIndex)" class="text-xs font-extrabold text-sky-700 dark:text-sky-300">Ikuti Lokasi 1</button>
+                            <button type="button" x-show="locations.length > 1" @click="removeLocation(locationIndex)" class="text-xs font-extrabold text-red-600">Hapus lokasi</button>
+                        </div>
                     </div>
                     <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         <label class="text-sm font-semibold text-slate-600 dark:text-slate-300">Lokasi<input :name="`locations[${locationIndex}][name]`" x-model="location.name" class="ip-input mt-1" placeholder="Nama lokasi"></label>
-                        <label class="text-sm font-semibold text-slate-600 dark:text-slate-300">Loading<input type="datetime-local" :name="`locations[${locationIndex}][loading_date]`" x-model="location.loading_date" class="ip-input mt-1"></label>
-                        <label class="text-sm font-semibold text-slate-600 dark:text-slate-300" x-show="location.work_flow === 'install_teardown'">Bongkar<input type="datetime-local" :name="`locations[${locationIndex}][teardown_date]`" x-model="location.teardown_date" class="ip-input mt-1"></label>
+                        <label class="text-sm font-semibold text-slate-600 dark:text-slate-300">Loading<input type="datetime-local" :name="`locations[${locationIndex}][loading_date]`" x-model="location.loading_date" @input="locationFieldChanged(locationIndex, 'loading_date', $event.target.value)" class="ip-input mt-1"></label>
+                        <label class="text-sm font-semibold text-slate-600 dark:text-slate-300" x-show="location.work_flow === 'install_teardown'">Bongkar<input type="datetime-local" :name="`locations[${locationIndex}][teardown_date]`" x-model="location.teardown_date" @input="locationFieldChanged(locationIndex, 'teardown_date', $event.target.value)" class="ip-input mt-1"></label>
                     </div>
                     <p class="mt-4 text-xs font-extrabold uppercase tracking-wide text-slate-500">Tipe pekerjaan</p>
                     <div class="mt-2 grid gap-2 sm:grid-cols-3">
-                        <template x-for="option in flowOptions" :key="option.value"><label class="cursor-pointer"><input type="radio" :name="`locations[${locationIndex}][work_flow]`" :value="option.value" x-model="location.work_flow" class="peer sr-only"><span class="block rounded-xl border border-sky-100 bg-white px-3 py-2 text-xs font-bold text-slate-600 peer-checked:border-sky-500 peer-checked:bg-sky-50 peer-checked:text-sky-800 dark:border-white/10 dark:bg-white/[.04] dark:text-slate-300" x-text="option.label"></span></label></template>
+                        <template x-for="option in flowOptions" :key="option.value"><label class="cursor-pointer"><input type="radio" :name="`locations[${locationIndex}][work_flow]`" :value="option.value" x-model="location.work_flow" @change="locationFieldChanged(locationIndex, 'work_flow', option.value)" class="peer sr-only"><span class="block rounded-xl border border-sky-100 bg-white px-3 py-2 text-xs font-bold text-slate-600 peer-checked:border-sky-500 peer-checked:bg-sky-50 peer-checked:text-sky-800 dark:border-white/10 dark:bg-white/[.04] dark:text-slate-300" x-text="option.label"></span></label></template>
                     </div>
+                    <label x-show="locationIndex === 0 && locations.length > 1" class="mt-3 flex cursor-pointer items-start gap-2 rounded-xl border border-sky-100 bg-white/80 px-3 py-2.5 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[.04] dark:text-slate-300">
+                        <input type="checkbox" x-model="applyAllLocations" @change="applyAllLocations = $event.target.checked; applyMasterToFollowers()" class="mt-0.5 rounded border-sky-200 text-sky-600">
+                        <span><span class="block text-slate-800 dark:text-white">Terapkan ke semua lokasi</span><span class="mt-0.5 block font-medium text-slate-500">Loading, bongkar, dan tipe pekerjaan mengikuti Lokasi 1. Pengaturan khusus tidak ditimpa.</span></span>
+                    </label>
 
                     <div class="mt-5">
                         <div class="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:thin]">
@@ -89,9 +99,22 @@
                                 <div class="mb-2 grid grid-cols-[48px,minmax(110px,1fr),58px,95px,95px,34px] gap-1.5 px-2 text-[9px] font-extrabold uppercase tracking-wide text-slate-400 lg:grid-cols-[72px,minmax(130px,1fr),88px,minmax(120px,145px),minmax(120px,145px),40px] lg:gap-2 lg:px-3 lg:text-[10px]">
                                     <span>Qty</span><span>Nama item</span><span>Panjang</span><span class="text-right">Harga satuan</span><span class="text-right">Total</span><span></span>
                                 </div>
-                                <div class="space-y-2">
+                                <div class="min-h-16 space-y-2 rounded-xl transition" data-item-list :data-location-key="location.key">
                                     <template x-for="(item, itemIndex) in location.items" :key="item.key">
-                                        <div class="rounded-xl border border-sky-100 bg-white p-2 transition focus-within:border-sky-400 lg:p-3 dark:border-white/10 dark:bg-[#10141d]">
+                                        <div :data-item-key="item.key" class="rounded-xl border border-sky-100 bg-white p-2 transition focus-within:border-sky-400 lg:p-3 dark:border-white/10 dark:bg-[#10141d]">
+                                            <div class="mb-2 flex items-center justify-between gap-2">
+                                                <div class="flex items-center gap-2">
+                                                    <button type="button" class="item-drag-handle flex h-8 w-9 touch-none cursor-grab items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-lg font-black leading-none text-sky-700 active:cursor-grabbing dark:border-white/10 dark:bg-white/[.05] dark:text-sky-300" aria-label="Geser item" title="Tahan lalu geser">⠿</button>
+                                                    <span class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400" x-text="`Item ${itemIndex + 1}`"></span>
+                                                </div>
+                                                <label x-show="locations.length > 1" class="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                                                    <span class="hidden sm:inline">Pindahkan</span>
+                                                    <select @change="moveItem(locationIndex, itemIndex, Number($event.target.value)); $event.target.value = ''" class="rounded-lg border-sky-100 bg-white py-1.5 pl-2 pr-7 text-[11px] font-bold dark:border-white/10 dark:bg-[#10141d]">
+                                                        <option value="">Pilih lokasi</option>
+                                                        <template x-for="(target, targetIndex) in locations" :key="target.key"><option :value="targetIndex" :disabled="targetIndex === locationIndex" x-text="`Lokasi ${targetIndex + 1}${target.name ? ' - ' + target.name : ''}`"></option></template>
+                                                    </select>
+                                                </label>
+                                            </div>
                                             <div class="grid grid-cols-[48px,minmax(110px,1fr),58px,95px,95px,34px] items-center gap-1.5 lg:grid-cols-[72px,minmax(130px,1fr),88px,minmax(120px,145px),minmax(120px,145px),40px] lg:gap-2">
                                                 <input type="number" min="0.01" step="0.01" :name="`locations[${locationIndex}][items][${itemIndex}][qty]`" x-model.number="item.qty" class="ip-input !px-2 !py-2 text-xs">
                                                 <span class="relative block min-w-0"><input :name="`locations[${locationIndex}][items][${itemIndex}][item_name]`" x-model="item.item_name" @click="editItemName(item)" @keydown.enter.prevent="editItemName(item)" readonly required class="ip-input cursor-pointer truncate !py-2 pl-2 pr-8 text-xs font-bold text-slate-800 hover:border-sky-400 dark:text-white" placeholder="Nama item"><span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-sky-600 dark:text-red-400" aria-hidden="true">✎</span></span>
@@ -99,11 +122,12 @@
                                                 <input type="hidden" :name="`locations[${locationIndex}][items][${itemIndex}][pricing_mode]`" :value="item.pricing_mode">
                                                 <input :name="`locations[${locationIndex}][items][${itemIndex}][unit_price]`" :value="money(item.unit_price)" @input="setUnitPrice(item, $event.target)" inputmode="numeric" class="ip-input !px-2 !py-2 text-right text-xs" placeholder="Rp">
                                                 <input :name="`locations[${locationIndex}][items][${itemIndex}][line_total]`" :value="displayLineTotal(item)" @input="setLineTotal(item, $event.target)" @focus="$event.target.select()" :disabled="item.merge_price" inputmode="numeric" class="ip-input !px-2 !py-2 text-right text-xs font-extrabold text-sky-700 disabled:bg-sky-50 disabled:text-slate-400 dark:text-red-400" :placeholder="item.merge_price ? 'Gabung' : 'Total'">
-                                                <button type="button" @click="removeItem(locationIndex,itemIndex)" class="flex h-9 items-center justify-center rounded-lg bg-red-50 font-bold text-red-600 hover:bg-red-100" aria-label="Hapus item">&times;</button>
+                                                <button type="button" @click="removeItem(locationIndex,itemIndex)" :disabled="totalItemCount() <= 1" class="flex h-9 items-center justify-center rounded-lg bg-red-50 font-bold text-red-600 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Hapus item">&times;</button>
                                             </div>
                                             <label x-show="itemIndex > 0" class="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-[11px] font-bold text-slate-500"><input type="checkbox" value="1" :name="`locations[${locationIndex}][items][${itemIndex}][merge_price]`" x-model="item.merge_price" class="rounded border-sky-200 text-sky-600"> Gabung harga dengan item sebelumnya</label>
                                         </div>
                                     </template>
+                                    <div x-show="location.items.length === 0" class="flex min-h-16 items-center justify-center rounded-xl border border-dashed border-sky-200 px-4 text-center text-xs font-bold text-slate-400 dark:border-white/15">Tarik item ke lokasi ini atau tambahkan item baru.</div>
                                 </div>
                             </div>
                         </div>
@@ -161,14 +185,99 @@
 <script>
 function documentEditor(initialLocations, discountMode, taxMode) {
     const row = () => ({ key: crypto.randomUUID(), item_name: '', qty: 1, length: '', pricing_mode: 'unit', unit_price: '', line_total: '', merge_price: false });
-    const site = () => ({ key: crypto.randomUUID(), name: '', loading_date: '', teardown_date: '', work_flow: 'install_teardown', items: [row()] });
+    const overrides = () => ({ loading_date: false, teardown_date: false, work_flow: false });
+    const site = () => ({ key: crypto.randomUUID(), name: '', loading_date: '', teardown_date: '', work_flow: 'install_teardown', _overrides: overrides(), items: [row()] });
     const normalized = (initialLocations || []).map(location => ({ ...site(), ...location, items: (location.items || [row()]).map(item => ({ ...row(), ...item })) }));
+    const master = normalized[0];
+    normalized.slice(1).forEach(location => {
+        location._overrides = {
+            loading_date: location.loading_date !== master.loading_date,
+            teardown_date: location.teardown_date !== master.teardown_date,
+            work_flow: location.work_flow !== master.work_flow,
+        };
+    });
     return {
         locations: normalized.length ? normalized : [site()], discountMode, taxMode,
-        itemModalOpen: false, editingItem: null, draftItemName: '',
+        itemModalOpen: false, editingItem: null, draftItemName: '', applyAllLocations: false,
         flowOptions: [{value:'install_teardown',label:'Pasang & Bongkar'},{value:'install_only',label:'Pasang saja'},{value:'one_way',label:'Sekali jalan'}],
-        addLocation() { this.locations.push(site()) }, removeLocation(index) { if (this.locations.length > 1) this.locations.splice(index,1) },
-        addItem(index) { this.locations[index].items.push(row()) }, removeItem(location,item) { if (this.locations[location].items.length > 1) this.locations[location].items.splice(item,1) },
+        init() { this.$nextTick(() => this.setupSortables()) },
+        addLocation() {
+            const location = site();
+            if (this.applyAllLocations) this.copyMasterTo(location);
+            this.locations.push(location);
+            this.$nextTick(() => this.setupSortables());
+        },
+        removeLocation(index) { if (this.locations.length > 1) this.locations.splice(index,1) },
+        addItem(index) { this.locations[index].items.push(row()) },
+        removeItem(location,item) { this.locations[location].items.splice(item,1); this.sanitizeFirstItem(location) },
+        locationFieldChanged(index, field, value) {
+            this.locations[index][field] = value;
+            if (index === 0) {
+                if (this.applyAllLocations) this.syncMasterField(field);
+                return;
+            }
+            this.locations[index]._overrides[field] = true;
+        },
+        applyMasterToFollowers() {
+            if (!this.applyAllLocations) return;
+            this.locations.slice(1).forEach(location => this.copyMasterTo(location, false));
+        },
+        syncMasterField(field) {
+            const masterLocation = this.locations[0];
+            this.locations.slice(1).forEach(location => {
+                if (!location._overrides[field]) location[field] = masterLocation[field];
+            });
+        },
+        copyMasterTo(location, resetOverrides = true) {
+            const masterLocation = this.locations[0];
+            ['loading_date', 'teardown_date', 'work_flow'].forEach(field => {
+                if (resetOverrides || !location._overrides[field]) location[field] = masterLocation[field];
+                if (resetOverrides) location._overrides[field] = false;
+            });
+        },
+        followMaster(index) { this.copyMasterTo(this.locations[index], true) },
+        hasLocationOverrides(location) { return Object.values(location._overrides || {}).some(Boolean) },
+        moveItem(fromIndex, itemIndex, toIndex, targetIndex = null) {
+            if (!Number.isInteger(toIndex) || toIndex < 0 || toIndex >= this.locations.length) return;
+            const source = this.locations[fromIndex];
+            const target = this.locations[toIndex];
+            if (!source || !target || !source.items[itemIndex]) return;
+            const [item] = source.items.splice(itemIndex, 1);
+            if (fromIndex !== toIndex) item.merge_price = false;
+            let insertion = targetIndex === null ? target.items.length : Math.max(0, Math.min(targetIndex, target.items.length));
+            target.items.splice(insertion, 0, item);
+            this.sanitizeFirstItem(fromIndex);
+            this.sanitizeFirstItem(toIndex);
+        },
+        sanitizeFirstItem(index) { if (this.locations[index]?.items[0]) this.locations[index].items[0].merge_price = false },
+        totalItemCount() { return this.locations.reduce((total, location) => total + location.items.length, 0) },
+        setupSortables() {
+            if (!window.Sortable) return;
+            this.$root.querySelectorAll('[data-item-list]').forEach(list => {
+                if (list._itemSortable) return;
+                list._itemSortable = window.Sortable.create(list, {
+                    group: 'document-items', handle: '.item-drag-handle', draggable: '[data-item-key]', animation: 170,
+                    ghostClass: 'opacity-40', chosenClass: 'ring-2', dragClass: 'shadow-2xl',
+                    fallbackOnBody: true, forceFallback: true, delay: 140, delayOnTouchOnly: true,
+                    scroll: true, scrollSensitivity: 90, scrollSpeed: 14, emptyInsertThreshold: 28,
+                    onStart: event => { event.item._originalNextSibling = event.item.nextSibling },
+                    onEnd: event => {
+                        const fromKey = event.from.dataset.locationKey;
+                        const toKey = event.to.dataset.locationKey;
+                        const fromIndex = this.locations.findIndex(location => location.key === fromKey);
+                        const toIndex = this.locations.findIndex(location => location.key === toKey);
+                        const oldIndex = event.oldDraggableIndex;
+                        const newIndex = event.newDraggableIndex;
+                        if (fromIndex < 0 || toIndex < 0 || oldIndex == null || newIndex == null) return;
+                        event.to.removeChild(event.item);
+                        const originalNext = event.item._originalNextSibling;
+                        event.from.insertBefore(event.item, originalNext?.parentNode === event.from ? originalNext : null);
+                        delete event.item._originalNextSibling;
+                        this.moveItem(fromIndex, oldIndex, toIndex, newIndex);
+                    },
+                });
+            });
+        },
         editItemName(item) { this.editingItem = item; this.draftItemName = item.item_name || ''; this.itemModalOpen = true; this.$nextTick(() => this.$refs.itemNameEditor?.focus()) },
         closeItemName() { this.itemModalOpen = false; this.editingItem = null; this.draftItemName = '' },
         saveItemName() { const value = this.draftItemName.replace(/\s+/g,' ').trim(); if (!value || !this.editingItem) return; this.editingItem.item_name = value; this.closeItemName() },

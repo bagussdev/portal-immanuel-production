@@ -14,5 +14,5 @@ class QuotationLocation extends Model
 
     public function quotation(): BelongsTo { return $this->belongsTo(Quotation::class); }
 
-    public function items(): HasMany { return $this->hasMany(QuotationItem::class); }
+    public function items(): HasMany { return $this->hasMany(QuotationItem::class)->orderBy('id'); }
 }

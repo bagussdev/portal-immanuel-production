@@ -164,6 +164,11 @@ class ExpandedWorkflowTest extends TestCase
         $this->assertStringNotContainsString('08:00', $multiLocationHtml);
         $this->assertStringNotContainsString('20:00', $multiLocationHtml);
         $this->assertStringNotContainsString('Acara:', $multiLocationHtml);
+        $this->assertSame(1, substr_count($multiLocationHtml, 'Invoice No'));
+        $this->assertSame(1, substr_count($multiLocationHtml, 'Invoice Date'));
+        $this->assertStringNotContainsString('document-number', $multiLocationHtml);
+        $this->assertStringContainsString('Total Tagihan', $multiLocationHtml);
+        $this->assertStringContainsString('Sisa Tagihan', $multiLocationHtml);
 
         $invoice->setRelation('locations', $invoice->locations->take(1));
         $singleLocationHtml = view('invoices.pdf', compact('invoice'))->render();
@@ -258,7 +263,66 @@ class ExpandedWorkflowTest extends TestCase
             ->assertDontSee('items-end justify-center', false)
             ->assertSee('name="event_date"', false)
             ->assertSee('name="event_end_date"', false)
+            ->assertSeeText('Terapkan ke semua lokasi')
+            ->assertSeeText('Pindahkan')
+            ->assertSee('data-item-list', false)
+            ->assertSee('window.Sortable.create', false)
             ->assertDontSee('event_start_date', false);
+    }
+
+    public function test_document_items_keep_drag_order_when_moved_between_locations(): void
+    {
+        $admin = User::where('email', 'admin@immanuel.test')->firstOrFail();
+        $payload = [
+            'client_name' => 'Client Drag Item',
+            'event_name' => 'Uji Urutan Item',
+            'event_date' => today()->addWeek()->toDateString(),
+            'discount_mode' => 'amount',
+            'tax_mode' => 'amount',
+            'locations' => [
+                [
+                    'name' => 'Lokasi Satu',
+                    'work_flow' => Invoice::FLOW_INSTALL_TEARDOWN,
+                    'items' => [
+                        ['item_name' => 'Item Alpha', 'qty' => 1, 'pricing_mode' => 'total', 'line_total' => '100000'],
+                        ['item_name' => 'Item Beta', 'qty' => 1, 'pricing_mode' => 'total', 'line_total' => '200000'],
+                    ],
+                ],
+                [
+                    'name' => 'Lokasi Dua',
+                    'work_flow' => Invoice::FLOW_ONE_WAY,
+                    'items' => [
+                        ['item_name' => 'Item Gamma', 'qty' => 1, 'pricing_mode' => 'total', 'line_total' => '300000'],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->actingAs($admin)->post(route('invoices.store'), $payload)->assertRedirect();
+        $invoice = Invoice::latest('id')->firstOrFail();
+
+        $payload['locations'][0]['items'] = [];
+        $payload['locations'][1]['items'] = [
+            ['item_name' => 'Item Beta', 'qty' => 1, 'pricing_mode' => 'total', 'line_total' => '200000'],
+            ['item_name' => 'Item Alpha', 'qty' => 1, 'pricing_mode' => 'total', 'line_total' => '100000'],
+            ['item_name' => 'Item Gamma', 'qty' => 1, 'pricing_mode' => 'total', 'line_total' => '300000'],
+        ];
+
+        $this->put(route('invoices.update', $invoice), $payload)->assertRedirect();
+
+        $locations = $invoice->fresh()->locations()->with('items')->get();
+        $this->assertCount(0, $locations[0]->items);
+        $this->assertSame(['Item Beta', 'Item Alpha', 'Item Gamma'], $locations[1]->items->pluck('item_name')->all());
+        $this->assertSame(600_000, (int) $invoice->fresh()->grand_total);
+
+        $this->post(route('invoices.issue', $invoice), [
+            'issue_date' => today()->toDateString(),
+            'due_date' => today()->addMonth()->toDateString(),
+        ])->assertRedirect();
+        $this->assertSame(
+            ['Item Beta', 'Item Alpha', 'Item Gamma'],
+            $invoice->fresh()->fieldJob->items()->pluck('item_name')->all(),
+        );
     }
 
     public function test_pay_all_only_marks_draft_slips_in_an_open_period(): void

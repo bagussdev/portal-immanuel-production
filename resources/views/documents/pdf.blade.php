@@ -30,9 +30,8 @@
     .header { height:28mm; margin-bottom:6mm; border-bottom:1.5px solid #334155; }
     .header table { width:100%; border-collapse:collapse; } .header td { vertical-align:top; } .logo { width:122px; } .company { text-align:right; line-height:1.55; }
     .company strong { display:block; color:#27303f; font-size:15px; } .muted { color:#64748b; }
-    .document-head { margin-bottom:13px; } .document-head table { width:100%; border-collapse:collapse; }
+    .document-head { margin-bottom:13px; }
     .document-title { color:#27303f; font-family:Georgia, serif; font-size:24px; font-weight:700; letter-spacing:.5px; }
-    .document-number { text-align:right; font-size:10px; }
     .info { width:100%; margin:0 0 14px; border-collapse:collapse; }
     .info > tbody > tr > td { padding:7px 8px; vertical-align:top; width:50%; } .info strong { color:#334155; }
     .info-lines { width:100%; border-collapse:collapse; background:transparent; } .info-lines td { width:auto; padding:2px 0; vertical-align:top; }
@@ -45,17 +44,21 @@
     table.items td { padding:7px 6px; border:1px solid #cbd5e1; vertical-align:top; } table.items tbody tr:nth-child(even) { background:#f8fafc; }
     .num,.qty,.size { text-align:center; } .price { text-align:right; white-space:nowrap; }
     .notes { margin:12px 0 0; padding:9px 11px; border:1px solid #cbd5e1; border-left:4px solid #94a3b8; background:#f8fafc; page-break-inside:avoid; }
-    .final { width:100%; margin-top:14px; border-collapse:separate; border-spacing:10px 0; page-break-inside:avoid; }
-    .final > tbody > tr > td { width:50%; vertical-align:top; }
-    .bank,.summary { border:1px solid #cbd5e1; background:#f8fafc; padding:10px; }
+    .final { width:100%; margin-top:14px; border-collapse:collapse; table-layout:fixed; page-break-inside:avoid; }
+    .final > tbody > tr > td { vertical-align:top; } .final .bank-cell { width:60%; padding-right:12px; } .final .summary-cell { width:40%; }
+    .bank { border-left:4px solid #64748b; background:#f8fafc; padding:12px 14px; }
+    .summary { overflow:hidden; border:1px solid #cbd5e1; background:#fff; }
     .box-title { margin-bottom:6px; color:#0f172a; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
-    .bank table,.summary table { width:100%; border-collapse:collapse; } .bank td,.summary td { padding:2px 0; }
-    .summary td:last-child { text-align:right; font-weight:600; } .grand td { border-top:1px solid #cbd5e1; padding-top:7px; color:#0f172a; font-weight:700 !important; }
+    .bank table,.summary table { width:100%; border-collapse:collapse; } .bank td { padding:3px 0; }
+    .summary .box-title { margin:0; padding:10px 12px; border-bottom:1px solid #cbd5e1; background:#f1f5f9; font-size:11px; text-transform:none; letter-spacing:0; }
+    .summary table { margin:6px 0; } .summary td { padding:4px 10px; } .summary td:nth-child(2) { width:12px; padding-left:0; padding-right:0; text-align:center; }
+    .summary td:last-child { text-align:right; font-weight:600; white-space:nowrap; } .grand td { padding-top:7px; color:#0f172a; font-weight:700 !important; }
+    .balance td { border-top:1px solid #cbd5e1; padding-top:7px; color:#0f172a; font-weight:700 !important; }
     .footer { margin-top:16px; padding:9px 12px; border:1px dashed #94a3b8; border-radius:6px; background:#f8fafc; text-align:center; color:#475569; font-size:9px; page-break-inside:avoid; clear:both; }
 </style></head><body>
 <div class="header"><table><tr><td><img class="logo" src="{{ $documentLogo }}" alt="Logo"></td><td class="company"><strong>IMMANUEL PRODUCTION</strong><span class="muted">Jl. Mekar Blok D1 No 15, Denpasar Selatan, Bali<br>admin@immanuelproduction.com | 0818550837</span></td></tr></table></div>
 
-<div class="document-head"><table><tr><td><div class="document-title">{{ $title }}</div><div class="muted">{{ $isInvoice ? 'Tagihan pekerjaan' : 'Penawaran pekerjaan' }}</div></td><td class="document-number"><strong>{{ $number }}</strong><br><span class="muted">{{ $date?->format('d-m-Y') }}</span></td></tr></table></div>
+<div class="document-head"><div class="document-title">{{ $title }}</div><div class="muted">{{ $isInvoice ? 'Tagihan pekerjaan' : 'Penawaran pekerjaan' }}</div></div>
 <table class="info"><tr><td><table class="info-lines">
     <tr><td>Client</td><td>: <strong>{{ $document->client?->name ?: '-' }}</strong></td></tr>
     <tr><td>Tanggal acara</td><td>: {{ \App\Support\DateRange::format($eventStart, $eventEnd) }}</td></tr>
@@ -80,8 +83,15 @@
 @endforeach
 
 @if(filled($notes))<div class="notes"><strong>Catatan</strong><br>{!! nl2br(e($notes)) !!}</div>@endif
-<table class="final"><tr><td>
+<table class="final"><tr><td class="bank-cell">
     @if($document->bankDetail)<div class="bank"><div class="box-title">Detail Rekening - {{ $document->bankDetail->label }}</div><table>@foreach(['Email'=>$document->bankDetail->email,'Bank'=>$document->bankDetail->bank_name,'Atas Nama'=>$document->bankDetail->account_name,'No Rek'=>$document->bankDetail->account_number,'NPWP'=>$document->bankDetail->npwp,'No HP'=>$document->bankDetail->phone] as $label=>$value)@if(filled($value))<tr><td class="muted">{{ $label }}</td><td>: <strong>{{ $value }}</strong></td></tr>@endif @endforeach</table></div>@endif
-</td><td><div class="summary"><div class="box-title">Ringkasan</div><table><tr><td>Subtotal</td><td>{{ $money($document->subtotal) }}</td></tr>@if($discount > 0)<tr><td>Diskon</td><td>- {{ $money($discount) }}</td></tr>@endif @if((int)$document->tax_value > 0)<tr><td>Potongan pajak</td><td>- {{ $money($document->tax_value) }}</td></tr>@endif<tr class="grand"><td>Total</td><td>{{ $money($document->grand_total) }}</td></tr>@if($isInvoice && (int)$document->total_paid > 0)<tr><td>Dibayar</td><td>{{ $money($document->total_paid) }}</td></tr><tr><td>Sisa</td><td>{{ $money($document->balance_due) ?: 'Lunas' }}</td></tr>@endif</table></div></td></tr></table>
+</td><td class="summary-cell"><div class="summary"><div class="box-title">Ringkasan</div><table>
+    <tr><td>Sub Total</td><td>:</td><td>{{ $money($document->subtotal) }}</td></tr>
+    @if($discount > 0)<tr><td>Diskon</td><td>:</td><td>- {{ $money($discount) }}</td></tr>@endif
+    @if((int)$document->tax_value > 0)<tr><td>Potongan pajak</td><td>:</td><td>- {{ $money($document->tax_value) }}</td></tr>@endif
+    <tr class="grand"><td>{{ $isInvoice ? 'Total Tagihan' : 'Total Penawaran' }}</td><td>:</td><td>{{ $money($document->grand_total) }}</td></tr>
+    @if($isInvoice && (int)$document->total_paid > 0)<tr><td>Dibayar</td><td>:</td><td>{{ $money($document->total_paid) }}</td></tr>@endif
+    @if($isInvoice)<tr class="balance"><td>Sisa Tagihan</td><td>:</td><td>{{ $money($document->balance_due) ?: 'Lunas' }}</td></tr>@endif
+</table></div></td></tr></table>
 <div class="footer">Terima kasih atas kepercayaan Anda.<br><strong>IMMANUEL PRODUCTION {{ date('Y') }}</strong> | admin@immanuelproduction.com | 0818550837 | www.immanuelproduction.com</div>
 </body></html>

@@ -68,7 +68,7 @@ class Quotation extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(QuotationItem::class);
+        return $this->hasMany(QuotationItem::class)->orderBy('id');
     }
 
     public function locations(): HasMany

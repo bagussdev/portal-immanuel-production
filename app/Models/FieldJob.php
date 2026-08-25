@@ -41,7 +41,7 @@ class FieldJob extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(FieldJobItem::class);
+        return $this->hasMany(FieldJobItem::class)->orderBy('id');
     }
 
     public function stages(): HasMany

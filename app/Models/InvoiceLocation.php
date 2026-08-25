@@ -14,7 +14,7 @@ class InvoiceLocation extends Model
 
     public function invoice(): BelongsTo { return $this->belongsTo(Invoice::class); }
 
-    public function items(): HasMany { return $this->hasMany(InvoiceItem::class); }
+    public function items(): HasMany { return $this->hasMany(InvoiceItem::class)->orderBy('id'); }
 
     public function quotationLocation(): BelongsTo { return $this->belongsTo(QuotationLocation::class); }
 }

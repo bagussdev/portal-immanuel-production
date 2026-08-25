@@ -342,14 +342,19 @@ class InvoiceController extends Controller
             'items.*.unit_price' => ['nullable', 'string', 'max:30'],
             'items.*.line_total' => ['nullable', 'string', 'max:30'],
             'items.*.merge_price' => ['nullable', 'boolean'],
-            'locations' => ['nullable', 'array', 'min:1'],
+            'locations' => ['nullable', 'array', 'min:1', function (string $attribute, mixed $value, \Closure $fail): void {
+                $itemCount = collect(is_array($value) ? $value : [])->sum(fn ($location) => count($location['items'] ?? []));
+                if ($itemCount < 1) {
+                    $fail('Minimal satu item pekerjaan harus diisi.');
+                }
+            }],
             'locations.*.name' => ['nullable', 'string', 'max:255'],
             'locations.*.event_start_date' => ['nullable', 'date'],
             'locations.*.event_end_date' => ['nullable', 'date', 'after_or_equal:locations.*.event_start_date'],
             'locations.*.loading_date' => ['nullable', 'date'],
             'locations.*.teardown_date' => ['nullable', 'date'],
             'locations.*.work_flow' => ['required_with:locations', 'in:install_teardown,install_only,one_way'],
-            'locations.*.items' => ['required_with:locations', 'array', 'min:1'],
+            'locations.*.items' => ['nullable', 'array'],
             'locations.*.items.*.item_name' => ['required', 'string', 'max:255'],
             'locations.*.items.*.qty' => ['required', 'numeric', 'min:0.01'],
             'locations.*.items.*.length' => ['nullable', 'numeric', 'min:0'],

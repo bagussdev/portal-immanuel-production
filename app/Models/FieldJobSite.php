@@ -16,7 +16,7 @@ class FieldJobSite extends Model
 
     public function invoiceLocation(): BelongsTo { return $this->belongsTo(InvoiceLocation::class); }
 
-    public function items(): HasMany { return $this->hasMany(FieldJobItem::class); }
+    public function items(): HasMany { return $this->hasMany(FieldJobItem::class)->orderBy('id'); }
 
     public function stages(): HasMany { return $this->hasMany(FieldJobStage::class); }
 }
