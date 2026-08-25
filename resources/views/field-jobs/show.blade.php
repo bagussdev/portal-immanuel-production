@@ -3,6 +3,7 @@
 
     $canManage = auth()->user()->canManageAllFieldJobs();
     $hasTeardown = $fieldJob->stages->contains('type', FieldJobStage::TYPE_TEARDOWN);
+    $jobSite = $fieldJob->sites->first();
     $formatQty = fn ($value) => rtrim(rtrim(number_format((float) $value, 2, ',', '.'), '0'), ',');
 @endphp
 
@@ -32,7 +33,7 @@
 
             <x-responsive-disclosure kicker="Informasi event" title="Jadwal & lokasi" description="Ringkasan waktu pelaksanaan dan catatan pekerjaan." :mobile-open="false">
                 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Hari acara</p><p class="mt-1 font-bold text-slate-900 dark:text-white">{{ optional($fieldJob->event_date)->translatedFormat('d F Y') ?: '-' }}</p></div>
+                    <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Hari acara</p><p class="mt-1 font-bold text-slate-900 dark:text-white"><x-date-range :start="$fieldJob->event_date" :end="$jobSite?->event_end_date" /></p></div>
                     <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Loading</p><p class="mt-1 font-bold text-slate-900 dark:text-white">{{ optional($fieldJob->loading_date)->translatedFormat('d M Y, H:i') ?: '-' }}</p></div>
                     <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Bongkar</p><p class="mt-1 font-bold text-slate-900 dark:text-white">{{ optional($fieldJob->teardown_date)->translatedFormat('d M Y, H:i') ?: 'Tidak diperlukan' }}</p></div>
                     <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Lokasi</p><p class="mt-1 font-bold text-slate-900 dark:text-white">{{ $fieldJob->location ?: '-' }}</p></div>
@@ -42,9 +43,28 @@
                 @endif
             </x-responsive-disclosure>
 
+            <x-responsive-disclosure kicker="Rincian" title="Item pekerjaan" description="{{ $fieldJob->items->count() }} item untuk lokasi ini." :mobile-open="false" content-class="p-0">
+                <div class="ip-table-wrap">
+                    <table class="ip-table min-w-[520px]">
+                        <thead><tr><th class="w-16 text-center">No</th><th>Item</th><th class="w-24 text-center">Qty</th><th class="w-28 text-center">Size</th></tr></thead>
+                        <tbody>
+                            @forelse($fieldJob->items as $item)
+                                <tr>
+                                    <td class="text-center font-bold text-slate-500">{{ $loop->iteration }}</td>
+                                    <td class="font-bold text-slate-900 dark:text-white">{{ $item->item_name }}</td>
+                                    <td class="text-center tabular-nums">{{ $formatQty($item->qty) }}</td>
+                                    <td class="text-center tabular-nums">{{ filled($item->length) && (float) $item->length > 0 ? $formatQty($item->length) : '' }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4" class="py-8 text-center text-sm text-slate-500">Belum ada item pekerjaan.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </x-responsive-disclosure>
+
             @foreach($fieldJob->stages as $stage)
                 @php
-                    $stageItems = $stage->field_job_site_id ? $fieldJob->items->where('field_job_site_id', $stage->field_job_site_id) : $fieldJob->items;
                     $isAssigned = $stage->assignees->contains('id', auth()->id());
                     $canAct = $canManage || $isAssigned;
                     $teardownStage = $stage->type === FieldJobStage::TYPE_INSTALL ? $fieldJob->stages->first(fn($candidate) => $candidate->type === FieldJobStage::TYPE_TEARDOWN && $candidate->field_job_site_id === $stage->field_job_site_id) : null;
@@ -54,7 +74,7 @@
                 <x-responsive-disclosure
                     id="stage-{{ $stage->id }}"
                     kicker="Tahap pekerjaan"
-                    title="{{ $stage->label() }}{{ $stage->site?->name ? ' - '.$stage->site->name : '' }}"
+                    title="{{ $stage->label() }}"
                     description="{{ optional($stage->scheduled_at)->translatedFormat('l, d F Y · H:i') ?: 'Jadwal belum diatur' }}"
                     :mobile-open="$stage->status === FieldJobStage::STATUS_IN_PROGRESS"
                     content-class="p-0"
@@ -62,18 +82,6 @@
                     <x-slot name="meta"><x-status-badge :status="$stage->status" /></x-slot>
                     <div class="grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr),360px]">
                         <div class="space-y-6">
-                            <div>
-                                <h3 class="ip-section-title">Detail yang dikerjakan</h3>
-                                <div class="mt-3 divide-y divide-sky-100 rounded-xl border border-sky-100 dark:divide-white/10 dark:border-white/10">
-                                    @foreach($stageItems as $item)
-                                        <div class="flex items-center justify-between gap-4 px-4 py-3">
-                                            <p class="font-bold text-slate-900 dark:text-white">{{ $item->item_name }}</p>
-                                            <p class="shrink-0 text-sm font-semibold text-slate-500">{{ $formatQty($item->qty) }}{{ $item->length ? ' × '.$formatQty($item->length).' m' : '' }}</p>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-
                             <div>
                                 <div class="flex items-center justify-between gap-3"><h3 class="ip-section-title">Foto hasil</h3><span class="text-xs font-bold text-slate-400">{{ $stage->photos->count() }} foto</span></div>
                                 @if($stage->photos->isNotEmpty())

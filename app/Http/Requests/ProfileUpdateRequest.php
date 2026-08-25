@@ -37,6 +37,14 @@ class ProfileUpdateRequest extends FormRequest
             'remove_profile_photo' => ['nullable', 'boolean'],
             'remove_ktp_photo' => ['nullable', 'boolean'],
             'ktp_rotation' => ['nullable', 'integer', Rule::in([0, 90, 180, 270])],
+            'profile_crop_x' => ['nullable', 'numeric', 'between:0,100'],
+            'profile_crop_y' => ['nullable', 'numeric', 'between:0,100'],
+            'profile_zoom' => ['nullable', 'numeric', 'between:1,3'],
+            'profile_transform_changed' => ['nullable', 'boolean'],
+            'ktp_crop_x' => ['nullable', 'numeric', 'between:0,100'],
+            'ktp_crop_y' => ['nullable', 'numeric', 'between:0,100'],
+            'ktp_zoom' => ['nullable', 'numeric', 'between:1,4'],
+            'ktp_transform_changed' => ['nullable', 'boolean'],
         ];
     }
 }

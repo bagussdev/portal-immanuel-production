@@ -20,13 +20,17 @@ class ScheduleController extends Controller
     public function show(Invoice $invoice): RedirectResponse
     {
         $this->authorize('fieldjobsmenu');
-        $fieldJob = $invoice->fieldJob;
+        $fieldJobs = $invoice->fieldJobs()->orderBy('id')->get();
 
-        if (! $fieldJob) {
+        if ($fieldJobs->isEmpty()) {
             return redirect()->route('field-jobs.index')
                 ->with('warning', 'Jadwal operasional untuk invoice ini belum tersedia.');
         }
 
-        return redirect()->route('field-jobs.show', $fieldJob);
+        if ($fieldJobs->count() === 1) {
+            return redirect()->route('field-jobs.show', $fieldJobs->first());
+        }
+
+        return redirect()->route('field-jobs.index', ['invoice_id' => $invoice->id]);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -79,9 +80,14 @@ class Invoice extends Model
         return $this->hasMany(InvoicePayment::class);
     }
 
-    public function fieldJob()
+    public function fieldJob(): HasOne
     {
         return $this->hasOne(FieldJob::class);
+    }
+
+    public function fieldJobs(): HasMany
+    {
+        return $this->hasMany(FieldJob::class)->orderBy('id');
     }
 
     public function creator(): BelongsTo

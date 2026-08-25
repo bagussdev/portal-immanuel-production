@@ -24,6 +24,7 @@ class FieldJobController extends Controller
         $search = trim((string) $request->input('search'));
         $status = (string) $request->input('status');
         $history = $request->boolean('history');
+        $invoiceId = $request->integer('invoice_id');
         $order = in_array($request->input('order'), ['latest', 'oldest'], true)
             ? (string) $request->input('order')
             : '';
@@ -31,10 +32,11 @@ class FieldJobController extends Controller
         $jobs = FieldJob::query()
             ->visibleTo($request->user())
             ->with([
-                'sites:id,field_job_id,name',
+                'sites:id,field_job_id,name,event_end_date',
                 'activeStages' => fn ($query) => $query
                     ->with('assignees:id,name')->orderBy('scheduled_at'),
             ])
+            ->when($invoiceId, fn ($query) => $query->where('invoice_id', $invoiceId))
             ->when($search, fn ($query) => $query->where(function ($query) use ($search) {
                 $query->where('job_number', 'like', "%{$search}%")
                     ->orWhere('client_name', 'like', "%{$search}%")
@@ -59,7 +61,7 @@ class FieldJobController extends Controller
             ->paginate(min(max((int) $request->input('per_page', 12), 6), 60))
             ->withQueryString();
 
-        return view('field-jobs.index', compact('jobs', 'search', 'status', 'history', 'order'));
+        return view('field-jobs.index', compact('jobs', 'search', 'status', 'history', 'order', 'invoiceId'));
     }
 
     public function history(Request $request): View

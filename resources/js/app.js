@@ -48,6 +48,62 @@ Alpine.data('appShell', (initial = {}) => ({
     },
 }));
 
+Alpine.data('userImageEditor', (initial = {}) => ({
+    showPassword: false,
+    showConfirmation: false,
+    profilePreview: initial.profileUrl || null,
+    ktpPreview: initial.ktpUrl || null,
+    profileFileName: '',
+    ktpFileName: '',
+    profileCropX: 50,
+    profileCropY: 50,
+    profileZoom: 1,
+    ktpCropX: 50,
+    ktpCropY: 50,
+    ktpZoom: 1,
+    ktpRotation: 0,
+    profileTransformChanged: false,
+    ktpTransformChanged: false,
+    previewFile(event, kind) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const preview = URL.createObjectURL(file);
+        if (kind === 'profile') {
+            this.profilePreview = preview;
+            this.profileFileName = file.name;
+            this.profileCropX = 50;
+            this.profileCropY = 50;
+            this.profileZoom = 1;
+            this.profileTransformChanged = true;
+        } else {
+            this.ktpPreview = preview;
+            this.ktpFileName = file.name;
+            this.ktpCropX = 50;
+            this.ktpCropY = 50;
+            this.ktpZoom = 1;
+            this.ktpRotation = 0;
+            this.ktpTransformChanged = true;
+        }
+    },
+    profileStyle() {
+        return {
+            objectPosition: `${this.profileCropX}% ${this.profileCropY}%`,
+            transform: `scale(${this.profileZoom})`,
+        };
+    },
+    ktpStyle() {
+        const rotationScale = this.ktpRotation % 180 ? 0.63 : 1;
+        return {
+            objectPosition: `${this.ktpCropX}% ${this.ktpCropY}%`,
+            transform: `rotate(${this.ktpRotation}deg) scale(${this.ktpZoom * rotationScale})`,
+        };
+    },
+    rotateKtp(step) {
+        this.ktpRotation = (this.ktpRotation + step + 360) % 360;
+        this.ktpTransformChanged = true;
+    },
+}));
+
 function setupResponsiveTable(wrapper) {
     if (wrapper.dataset.scrollReady === 'true') return;
 

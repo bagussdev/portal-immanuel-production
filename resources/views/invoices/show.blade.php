@@ -38,9 +38,9 @@
                             <a href="{{ route('invoices.export.pdf', [$invoice, $invoice->pdfFilename(), 'download' => 1]) }}" class="ip-btn border border-white/20 bg-white/10 text-white hover:bg-white/20">
                                 Unduh PDF
                             </a>
-                            @if($invoice->fieldJob)
-                                <a href="{{ route('field-jobs.show', $invoice->fieldJob) }}" class="ip-btn border border-white/20 bg-white/10 text-white hover:bg-white/20">
-                                    Pekerjaan {{ $invoice->fieldJob->job_number }}
+                            @if($invoice->fieldJobs->isNotEmpty())
+                                <a href="{{ route('schedule.show', $invoice) }}" class="ip-btn border border-white/20 bg-white/10 text-white hover:bg-white/20">
+                                    {{ $invoice->fieldJobs->count() }} jadwal event
                                 </a>
                             @endif
                         @endif

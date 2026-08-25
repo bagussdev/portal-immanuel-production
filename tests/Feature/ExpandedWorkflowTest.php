@@ -10,6 +10,7 @@ use App\Models\Payroll;
 use App\Models\PayrollPeriod;
 use App\Models\Quotation;
 use App\Models\User;
+use App\Services\FieldJobSynchronizer;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -77,17 +78,25 @@ class ExpandedWorkflowTest extends TestCase
             'profile_photo' => UploadedFile::fake()->image('profil.jpg', 180, 240),
             'ktp_photo' => UploadedFile::fake()->image('ktp.jpg', 320, 200),
             'ktp_rotation' => 90,
+            'profile_crop_y' => 75,
+            'profile_zoom' => 1.5,
+            'ktp_crop_x' => 40,
+            'ktp_crop_y' => 60,
+            'ktp_zoom' => 1.4,
         ])->assertRedirect(route('users.index'));
 
         $crew = User::where('email', 'crew-foto@immanuel.test')->firstOrFail();
         Storage::disk('local')->assertExists($crew->profile_photo_path);
         Storage::disk('local')->assertExists($crew->ktp_photo_path);
-        [$width, $height] = getimagesize(Storage::disk('local')->path($crew->ktp_photo_path));
-        $this->assertSame([200, 320], [$width, $height]);
+        $this->assertSame([900, 900], array_slice(getimagesize(Storage::disk('local')->path($crew->profile_photo_path)), 0, 2));
+        $this->assertSame([1284, 810], array_slice(getimagesize(Storage::disk('local')->path($crew->ktp_photo_path)), 0, 2));
 
         $this->get(route('users.edit', $crew))
             ->assertOk()
             ->assertSeeText('85,6 × 54 mm')
+            ->assertSeeText('Geser vertikal')
+            ->assertSee('name="profile_zoom"', false)
+            ->assertSee('name="ktp_zoom"', false)
             ->assertSee('name="ktp_rotation"', false)
             ->assertSee('Putar KTP ke kanan', false);
         $this->get(route('users.index'))
@@ -101,10 +110,13 @@ class ExpandedWorkflowTest extends TestCase
             'no_telf' => $crew->no_telf,
             'role_id' => $crew->role_id,
             'ktp_rotation' => 90,
+            'ktp_crop_x' => 50,
+            'ktp_crop_y' => 50,
+            'ktp_zoom' => 2,
+            'ktp_transform_changed' => 1,
         ])->assertRedirect(route('users.index'));
 
-        [$width, $height] = getimagesize(Storage::disk('local')->path($crew->ktp_photo_path));
-        $this->assertSame([320, 200], [$width, $height]);
+        $this->assertSame([1284, 810], array_slice(getimagesize(Storage::disk('local')->path($crew->ktp_photo_path)), 0, 2));
 
         $pdfHtml = view('users.pdf', ['users' => collect([$crew->fresh()->load('role')])])->render();
         $this->assertStringContainsString('width:25mm;height:25mm', $pdfHtml);
@@ -186,11 +198,27 @@ class ExpandedWorkflowTest extends TestCase
             'due_date' => today()->addMonth()->toDateString(),
         ])->assertRedirect();
 
-        $job = $invoice->fresh()->fieldJob()->with(['sites.stages'])->firstOrFail();
-        $this->assertSame(2, $job->sites->count());
-        $this->assertSame(3, $job->stages()->where('is_active', true)->count());
-        $this->assertSame(1, $job->stages()->where('type', FieldJobStage::TYPE_INSTALL)->count());
-        $this->assertSame(1, $job->stages()->where('type', FieldJobStage::TYPE_ONE_WAY)->count());
+        $jobs = $invoice->fresh()->fieldJobs()->with(['sites', 'stages', 'items'])->get();
+        $this->assertCount(2, $jobs);
+        $this->assertTrue($jobs->every(fn (FieldJob $job) => $job->sites->count() === 1));
+        $this->assertSame(['The Meru Sanur', 'Pantai Sanur'], $jobs->pluck('location')->all());
+        $this->assertSame(3, $jobs->sum(fn (FieldJob $job) => $job->stages->where('is_active', true)->count()));
+        $this->assertSame(1, $jobs->flatMap->stages->where('type', FieldJobStage::TYPE_INSTALL)->count());
+        $this->assertSame(1, $jobs->flatMap->stages->where('type', FieldJobStage::TYPE_ONE_WAY)->count());
+        $this->assertSame(['Panggung utama'], $jobs->firstWhere('location', 'The Meru Sanur')->items->pluck('item_name')->all());
+        $this->assertSame(['Paket dekorasi'], $jobs->firstWhere('location', 'Pantai Sanur')->items->pluck('item_name')->all());
+
+        $scheduleList = $this->get(route('field-jobs.index', ['invoice_id' => $invoice->id]))->assertOk();
+        $scheduleList->assertSeeText('The Meru Sanur')->assertSeeText('Pantai Sanur');
+        foreach ($jobs as $job) {
+            $scheduleList->assertSee(route('field-jobs.show', $job), false);
+        }
+        $this->get(route('field-jobs.show', $jobs->first()))
+            ->assertOk()
+            ->assertSeeText('Item pekerjaan')
+            ->assertSeeText('Panggung utama')
+            ->assertDontSeeText('Harga satuan')
+            ->assertDontSeeText('Rp 500.000');
 
         $this->post(route('invoices.complete', $invoice))->assertRedirect();
         $this->assertSame(Invoice::STATUS_PAID, $invoice->fresh()->status);
@@ -205,8 +233,10 @@ class ExpandedWorkflowTest extends TestCase
         $this->get(route('invoices.index'))->assertOk()->assertDontSeeText('Festival Multi Lokasi');
         $this->get(route('invoices.index', ['history' => 1]))->assertOk()->assertSeeText('Festival Multi Lokasi');
 
-        $job->stages()->update(['status' => FieldJobStage::STATUS_COMPLETED]);
-        $job->recalculateStatus();
+        foreach ($jobs as $job) {
+            $job->stages()->update(['status' => FieldJobStage::STATUS_COMPLETED]);
+            $job->recalculateStatus();
+        }
         $this->get(route('field-jobs.index'))->assertOk()->assertDontSeeText('Festival Multi Lokasi');
         $this->get(route('field-jobs.history'))->assertOk()->assertSeeText('Festival Multi Lokasi');
     }
@@ -285,6 +315,90 @@ class ExpandedWorkflowTest extends TestCase
             ->assertDontSee('event_start_date', false);
     }
 
+    public function test_legacy_multi_site_job_is_split_without_losing_assignments(): void
+    {
+        $admin = User::where('email', 'admin@immanuel.test')->firstOrFail();
+        $crew = User::where('email', 'user@immanuel.test')->firstOrFail();
+        $client = Client::create(['name' => 'Client Jadwal Lama']);
+        $invoice = Invoice::create([
+            'client_id' => $client->id,
+            'event_name' => 'Event Jadwal Lama',
+            'event_date' => today()->addWeek(),
+            'status' => Invoice::STATUS_UNPAID,
+            'created_by' => $admin->id,
+        ]);
+        $locations = collect(['Lokasi Lama A', 'Lokasi Lama B'])->map(function (string $name, int $index) use ($invoice) {
+            $location = $invoice->locations()->create([
+                'name' => $name,
+                'event_start_date' => $invoice->event_date,
+                'loading_date' => now()->addDays(5 + $index),
+                'work_flow' => Invoice::FLOW_INSTALL_ONLY,
+                'sort_order' => $index,
+            ]);
+            $location->items()->create([
+                'invoice_id' => $invoice->id,
+                'item_name' => 'Item '.$name,
+                'qty' => 1,
+                'unit_price' => 100_000,
+            ]);
+
+            return $location;
+        });
+
+        $legacyJob = FieldJob::create([
+            'invoice_id' => $invoice->id,
+            'job_number' => 'JOB/LEGACY/001',
+            'client_name' => $client->name,
+            'event_name' => $invoice->event_name,
+            'status' => FieldJob::STATUS_PENDING,
+            'created_by' => $admin->id,
+        ]);
+
+        foreach ($locations as $location) {
+            $site = $legacyJob->sites()->create([
+                'invoice_location_id' => $location->id,
+                'name' => $location->name,
+                'event_start_date' => $location->event_start_date,
+                'loading_date' => $location->loading_date,
+                'work_flow' => $location->work_flow,
+                'sort_order' => $location->sort_order,
+            ]);
+            $site->items()->create([
+                'field_job_id' => $legacyJob->id,
+                'invoice_item_id' => $location->items()->value('id'),
+                'item_name' => 'Item '.$location->name,
+                'qty' => 1,
+                'work_flow' => Invoice::FLOW_INSTALL_ONLY,
+            ]);
+            $stage = $site->stages()->create([
+                'field_job_id' => $legacyJob->id,
+                'type' => FieldJobStage::TYPE_INSTALL,
+                'scheduled_at' => $location->loading_date,
+                'status' => FieldJobStage::STATUS_PENDING,
+                'is_active' => true,
+            ]);
+            if ($location->name === 'Lokasi Lama B') {
+                $stage->assignees()->attach($crew->id, ['assigned_by' => $admin->id]);
+                $stage->photos()->create([
+                    'path' => 'field-jobs/legacy/foto.jpg',
+                    'original_name' => 'foto.jpg',
+                    'mime_type' => 'image/jpeg',
+                    'size_bytes' => 1024,
+                    'uploaded_by' => $crew->id,
+                ]);
+            }
+        }
+
+        app(FieldJobSynchronizer::class)->sync($invoice, $admin->id);
+
+        $jobs = $invoice->fieldJobs()->with(['sites', 'items', 'stages.assignees'])->get();
+        $this->assertCount(2, $jobs);
+        $this->assertTrue($jobs->every(fn (FieldJob $job) => $job->sites->count() === 1));
+        $secondStage = $jobs->firstWhere('location', 'Lokasi Lama B')->stages->first();
+        $this->assertTrue($secondStage->assignees->contains('id', $crew->id));
+        $this->assertSame(1, $secondStage->photos()->count());
+    }
+
     public function test_document_items_keep_drag_order_when_moved_between_locations(): void
     {
         $admin = User::where('email', 'admin@immanuel.test')->firstOrFail();
@@ -334,9 +448,12 @@ class ExpandedWorkflowTest extends TestCase
             'issue_date' => today()->toDateString(),
             'due_date' => today()->addMonth()->toDateString(),
         ])->assertRedirect();
+        $jobs = $invoice->fresh()->fieldJobs()->with('items')->get();
+        $this->assertCount(2, $jobs);
+        $this->assertSame([], $jobs->firstWhere('location', 'Lokasi Satu')->items->pluck('item_name')->all());
         $this->assertSame(
             ['Item Beta', 'Item Alpha', 'Item Gamma'],
-            $invoice->fresh()->fieldJob->items()->pluck('item_name')->all(),
+            $jobs->firstWhere('location', 'Lokasi Dua')->items->pluck('item_name')->all(),
         );
     }
 

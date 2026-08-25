@@ -80,20 +80,30 @@ class ProfileTest extends TestCase
             'profile_photo' => UploadedFile::fake()->image('profil.jpg', 180, 240),
             'ktp_photo' => UploadedFile::fake()->image('ktp.jpg', 320, 200),
             'ktp_rotation' => 90,
+            'profile_crop_y' => 70,
+            'profile_zoom' => 1.4,
+            'ktp_crop_x' => 35,
+            'ktp_crop_y' => 60,
+            'ktp_zoom' => 1.3,
         ])->assertSessionHasNoErrors()->assertRedirect(route('profile.edit'));
 
         $user->refresh();
         Storage::disk('local')->assertExists($user->profile_photo_path);
         Storage::disk('local')->assertExists($user->ktp_photo_path);
-        [$width, $height] = getimagesize(Storage::disk('local')->path($user->ktp_photo_path));
-        $this->assertSame([200, 320], [$width, $height]);
+        Storage::disk('local')->assertExists(dirname($user->profile_photo_path).'/originals/'.basename($user->profile_photo_path));
+        Storage::disk('local')->assertExists(dirname($user->ktp_photo_path).'/originals/'.basename($user->ktp_photo_path));
+        $this->assertSame([900, 900], array_slice(getimagesize(Storage::disk('local')->path($user->profile_photo_path)), 0, 2));
+        $this->assertSame([1284, 810], array_slice(getimagesize(Storage::disk('local')->path($user->ktp_photo_path)), 0, 2));
 
         $this->get(route('users.photo', [$user, 'profile']))->assertOk();
         $this->get(route('users.photo', [$user, 'ktp']))->assertOk();
         $this->get(route('profile.edit'))
             ->assertOk()
             ->assertSeeText('85,6 × 54 mm')
-            ->assertSee('ktpPreview:', false);
+            ->assertSeeText('Geser vertikal')
+            ->assertSee('name="profile_zoom"', false)
+            ->assertSee('name="ktp_zoom"', false)
+            ->assertSee('userImageEditor(', false);
 
         $this->patch(route('profile.update'), [
             'name' => $user->name,
@@ -101,10 +111,13 @@ class ProfileTest extends TestCase
             'email' => $user->email,
             'no_telf' => $user->no_telf,
             'ktp_rotation' => 90,
+            'ktp_crop_x' => 50,
+            'ktp_crop_y' => 50,
+            'ktp_zoom' => 1.8,
+            'ktp_transform_changed' => 1,
         ])->assertSessionHasNoErrors();
 
-        [$width, $height] = getimagesize(Storage::disk('local')->path($user->ktp_photo_path));
-        $this->assertSame([320, 200], [$width, $height]);
+        $this->assertSame([1284, 810], array_slice(getimagesize(Storage::disk('local')->path($user->ktp_photo_path)), 0, 2));
     }
 
     public function test_user_can_delete_their_account(): void

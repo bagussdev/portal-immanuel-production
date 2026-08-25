@@ -4,27 +4,7 @@
 @endphp
 
 <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="space-y-5"
-    x-data="{
-        profilePreview: @js($profileUrl),
-        ktpPreview: @js($ktpUrl),
-        profileFileName: '',
-        ktpFileName: '',
-        ktpRotation: 0,
-        previewFile(event, kind) {
-            const file = event.target.files?.[0];
-            if (!file) return;
-            const preview = URL.createObjectURL(file);
-            if (kind === 'profile') {
-                this.profilePreview = preview;
-                this.profileFileName = file.name;
-            } else {
-                this.ktpPreview = preview;
-                this.ktpFileName = file.name;
-                this.ktpRotation = 0;
-            }
-        },
-        rotateKtp(step) { this.ktpRotation = (this.ktpRotation + step + 360) % 360 }
-    }"
+    x-data="userImageEditor({ profileUrl: @js($profileUrl), ktpUrl: @js($ktpUrl) })"
     onsubmit="showFullScreenLoader()">
     @csrf
     @method('PATCH')
@@ -39,11 +19,12 @@
                         <span class="rounded-lg bg-sky-50 px-2 py-1 text-[10px] font-extrabold text-sky-700 dark:bg-white/[.05] dark:text-red-300">1 : 1</span>
                     </div>
                     <div class="mx-auto mt-3 aspect-square w-full max-w-[210px] overflow-hidden rounded-3xl border-2 border-dashed border-sky-200 bg-sky-50 shadow-inner dark:border-white/15 dark:bg-white/[.03]">
-                        <template x-if="profilePreview"><img :src="profilePreview" class="h-full w-full object-cover" alt="Preview foto profil"></template>
+                        <template x-if="profilePreview"><img :src="profilePreview" :style="profileStyle()" class="h-full w-full object-cover transition-transform duration-150" alt="Preview foto profil"></template>
                         <template x-if="!profilePreview"><div class="flex h-full w-full items-center justify-center text-5xl font-black text-sky-700 dark:text-red-400">{{ strtoupper(substr($user->name, 0, 1)) }}</div></template>
                     </div>
                     <label class="ip-btn-secondary mt-3 w-full cursor-pointer justify-center"><span>Pilih foto profil</span><input type="file" name="profile_photo" accept=".jpg,.jpeg,.png,.webp" class="sr-only" @change="previewFile($event, 'profile')"></label>
                     <p x-show="profileFileName" x-text="profileFileName" class="mt-2 truncate text-center text-xs font-semibold text-slate-500"></p>
+                    <x-image-adjust-controls kind="profile" :zoom-max="3" />
                     <x-input-error :messages="$errors->get('profile_photo')" class="mt-2" />
                     @if($user->profile_photo_path)<label class="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-500"><input type="checkbox" name="remove_profile_photo" value="1" class="rounded"> Hapus foto profil</label>@endif
                 </div>
@@ -54,9 +35,10 @@
                         <span class="rounded-lg bg-sky-50 px-2 py-1 text-[10px] font-extrabold text-sky-700 dark:bg-white/[.05] dark:text-red-300">85,6 × 54 mm</span>
                     </div>
                     <div class="relative mt-3 aspect-[856/540] w-full overflow-hidden rounded-2xl border-2 border-dashed border-sky-200 bg-slate-100 shadow-inner dark:border-white/15 dark:bg-black/30">
-                        <template x-if="ktpPreview"><img :src="ktpPreview" :style="`transform: rotate(${ktpRotation}deg) scale(${ktpRotation % 180 ? 0.62 : 1})`" class="h-full w-full object-contain transition-transform duration-200" alt="Preview KTP"></template>
+                        <template x-if="ktpPreview"><img :src="ktpPreview" :style="ktpStyle()" class="h-full w-full object-cover transition-transform duration-150" alt="Preview KTP"></template>
                         <template x-if="!ktpPreview"><div class="flex h-full w-full flex-col items-center justify-center text-slate-400"><svg class="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5.5 16c.6-1.6 1.5-2.4 2.5-2.4s1.9.8 2.5 2.4M13 10h5M13 14h5"/></svg><span class="mt-2 text-xs font-bold">Belum ada KTP</span></div></template>
                     </div>
+                    <x-image-adjust-controls kind="ktp" :zoom-max="4" />
                     <input type="hidden" name="ktp_rotation" :value="ktpRotation">
                     <div class="mt-3 grid grid-cols-[1fr,44px,44px] gap-2">
                         <label class="ip-btn-secondary min-w-0 cursor-pointer justify-center"><span class="truncate">Pilih foto KTP</span><input type="file" name="ktp_photo" accept=".jpg,.jpeg,.png,.webp" class="sr-only" @change="previewFile($event, 'ktp')"></label>

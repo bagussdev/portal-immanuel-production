@@ -24,6 +24,7 @@
                     @endforeach
                 </select>
                 @if($history)<input type="hidden" name="history" value="1">@endif
+                @if($invoiceId)<input type="hidden" name="invoice_id" value="{{ $invoiceId }}">@endif
                 @if($order)<input type="hidden" name="order" value="{{ $order }}">@endif
                 <button class="ip-btn-dark">Terapkan filter</button>
             </form>
@@ -45,7 +46,7 @@
                         <div class="mt-5 grid grid-cols-2 gap-3 rounded-xl bg-sky-50/70 p-3 sm:grid-cols-3 dark:bg-white/[.035]">
                             <div>
                                 <p class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Event</p>
-                                <p class="mt-1 text-xs font-extrabold text-slate-800 dark:text-slate-200"><x-date-range :start="$job->event_date" /></p>
+                                <p class="mt-1 text-xs font-extrabold text-slate-800 dark:text-slate-200"><x-date-range :start="$job->event_date" :end="$job->sites->first()?->event_end_date" /></p>
                             </div>
                             <div>
                                 <p class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Pasang</p>
@@ -57,7 +58,7 @@
                             </div>
                             <div class="col-span-2 sm:col-span-3">
                                 <p class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Lokasi</p>
-                                <p class="mt-1 truncate text-xs font-bold text-slate-700 dark:text-slate-300">{{ $job->sites->pluck('name')->filter()->join(', ') ?: ($job->location ?: '-') }}</p>
+                                <p class="mt-1 truncate text-xs font-bold text-slate-700 dark:text-slate-300">{{ $job->location ?: '-' }}</p>
                             </div>
                         </div>
 
