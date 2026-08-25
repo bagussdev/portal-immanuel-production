@@ -39,6 +39,9 @@ class PrivateImageStorage
                 throw new \RuntimeException('Gambar tidak dapat disimpan.');
             }
             imagedestroy($image);
+            if ($crop) {
+                $this->saveTransform($path, $crop);
+            }
         } else {
             $path = $file->storeAs($directory, basename($path), 'local');
             if ($rotation % 360 !== 0 || $crop) {
@@ -98,8 +101,39 @@ class PrivateImageStorage
         $image = $this->cropAndResize($image, $crop, $mimeType);
         $saved = $this->saveImage($image, $absolutePath, $mimeType);
         imagedestroy($image);
+        if ($saved) {
+            $this->saveTransform($path, $crop);
+        }
 
         return $saved;
+    }
+
+    public function transform(string $path): array
+    {
+        $defaults = ['x' => 50.0, 'y' => 50.0, 'zoom' => 1.0];
+        $disk = Storage::disk('local');
+        $transformPath = $this->transformPath($path);
+        if (! $disk->exists($transformPath)) {
+            return $defaults;
+        }
+
+        $stored = json_decode($disk->get($transformPath), true);
+        if (! is_array($stored)) {
+            return $defaults;
+        }
+
+        return [
+            'x' => min(max((float) ($stored['x'] ?? 50), 0), 100),
+            'y' => min(max((float) ($stored['y'] ?? 50), 0), 100),
+            'zoom' => min(max((float) ($stored['zoom'] ?? 1), 1), 4),
+        ];
+    }
+
+    public function originalStoredPath(string $path): string
+    {
+        $originalPath = $this->originalPath($path);
+
+        return Storage::disk('local')->exists($originalPath) ? $originalPath : $path;
     }
 
     public function deleteStored(?string $path): void
@@ -108,7 +142,7 @@ class PrivateImageStorage
             return;
         }
 
-        Storage::disk('local')->delete([$path, $this->originalPath($path)]);
+        Storage::disk('local')->delete([$path, $this->originalPath($path), $this->transformPath($path)]);
     }
 
     private function loadImage(string $path, string $mimeType): \GdImage|false
@@ -164,6 +198,20 @@ class PrivateImageStorage
         $directory = str_replace('\\', '/', dirname($path));
 
         return trim($directory, './').'/originals/'.basename($path);
+    }
+
+    private function transformPath(string $path): string
+    {
+        return $this->originalPath($path).'.json';
+    }
+
+    private function saveTransform(string $path, array $crop): void
+    {
+        Storage::disk('local')->put($this->transformPath($path), json_encode([
+            'x' => min(max((float) ($crop['x'] ?? 50), 0), 100),
+            'y' => min(max((float) ($crop['y'] ?? 50), 0), 100),
+            'zoom' => min(max((float) ($crop['zoom'] ?? 1), 1), 4),
+        ], JSON_THROW_ON_ERROR));
     }
 
     private function rotateImage(\GdImage $image, int $rotation, string $mimeType): \GdImage

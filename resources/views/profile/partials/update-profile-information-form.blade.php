@@ -1,17 +1,19 @@
 @php
     $imageVersion = $user->updated_at?->getTimestamp();
-    $profileUrl = $user->profile_photo_path ? route('users.photo', ['user' => $user, 'kind' => 'profile', 'v' => $imageVersion]) : null;
-    $ktpUrl = $user->ktp_photo_path ? route('users.photo', ['user' => $user, 'kind' => 'ktp', 'v' => $imageVersion]) : null;
+    $profileTransform = $imageTransforms['profile'] ?? ['x' => 50, 'y' => 50, 'zoom' => 1];
+    $ktpTransform = $imageTransforms['ktp'] ?? ['x' => 50, 'y' => 50, 'zoom' => 1];
+    $profileUrl = $user->profile_photo_path ? route('users.photo', ['user' => $user, 'kind' => 'profile', 'source' => 'original', 'v' => $imageVersion]) : null;
+    $ktpUrl = $user->ktp_photo_path ? route('users.photo', ['user' => $user, 'kind' => 'ktp', 'source' => 'original', 'v' => $imageVersion]) : null;
 @endphp
 
 <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="space-y-5"
-    x-data="userImageEditor({ profileUrl: @js($profileUrl), ktpUrl: @js($ktpUrl) })"
+    x-data="userImageEditor({ profileUrl: @js($profileUrl), ktpUrl: @js($ktpUrl), profileTransform: @js($profileTransform), ktpTransform: @js($ktpTransform) })"
     onsubmit="showFullScreenLoader()">
     @csrf
     @method('PATCH')
 
     <div class="grid items-start gap-5 xl:grid-cols-[380px,minmax(0,1fr)]">
-        <section class="ip-card p-5 sm:p-6" x-data="{ identityOpen: window.innerWidth >= 1280 }">
+        <section class="ip-card p-5 sm:p-6">
             <button type="button" @click="identityOpen = !identityOpen"
                 class="flex w-full items-center justify-between gap-3 text-left"
                 :aria-expanded="identityOpen.toString()" aria-controls="profile-identity-panel">
@@ -32,7 +34,7 @@
                         <span class="rounded-lg bg-sky-50 px-2 py-1 text-[10px] font-extrabold text-sky-700 dark:bg-white/[.05] dark:text-red-300">1 : 1</span>
                     </div>
                     <div class="mx-auto mt-3 aspect-square w-full max-w-[210px] overflow-hidden rounded-3xl border-2 border-dashed border-sky-200 bg-sky-50 shadow-inner dark:border-white/15 dark:bg-white/[.03]">
-                        <template x-if="profilePreview"><img :src="profilePreview" :style="profileStyle()" class="h-full w-full object-contain transition-transform duration-150" alt="Preview foto profil"></template>
+                        <canvas x-ref="profileCanvas" x-cloak x-show="profilePreview" class="h-full w-full bg-white" aria-label="Preview foto profil"></canvas>
                         <template x-if="!profilePreview"><div class="flex h-full w-full items-center justify-center text-5xl font-black text-sky-700 dark:text-red-400">{{ strtoupper(substr($user->name, 0, 1)) }}</div></template>
                     </div>
                     <label class="ip-btn-secondary mt-3 w-full cursor-pointer justify-center"><span>Pilih foto profil</span><input type="file" name="profile_photo" accept=".jpg,.jpeg,.png,.webp" class="sr-only" @change="previewFile($event, 'profile')"></label>
@@ -48,7 +50,7 @@
                         <span class="rounded-lg bg-sky-50 px-2 py-1 text-[10px] font-extrabold text-sky-700 dark:bg-white/[.05] dark:text-red-300">85,6 × 54 mm</span>
                     </div>
                     <div class="relative mt-3 aspect-[856/540] w-full overflow-hidden rounded-2xl border-2 border-dashed border-sky-200 bg-slate-100 shadow-inner dark:border-white/15 dark:bg-black/30">
-                        <template x-if="ktpPreview"><img :src="ktpPreview" :style="ktpStyle()" class="h-full w-full object-contain transition-transform duration-150" alt="Preview KTP"></template>
+                        <canvas x-ref="ktpCanvas" x-cloak x-show="ktpPreview" class="h-full w-full bg-white" aria-label="Preview KTP"></canvas>
                         <template x-if="!ktpPreview"><div class="flex h-full w-full flex-col items-center justify-center text-slate-400"><svg class="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5.5 16c.6-1.6 1.5-2.4 2.5-2.4s1.9.8 2.5 2.4M13 10h5M13 14h5"/></svg><span class="mt-2 text-xs font-bold">Belum ada KTP</span></div></template>
                     </div>
                     <x-image-adjust-controls kind="ktp" :zoom-max="4" />

@@ -89,11 +89,18 @@ class UserController extends Controller
         return redirect()->route('users.edit', $user);
     }
 
-    public function edit(User $user)
+    public function edit(User $user, PrivateImageStorage $images)
     {
         $this->authorize('edituser');
 
-        return view('users.edit', ['user' => $user, 'roles' => Role::orderBy('name')->get()]);
+        return view('users.edit', [
+            'user' => $user,
+            'roles' => Role::orderBy('name')->get(),
+            'imageTransforms' => [
+                'profile' => $user->profile_photo_path ? $images->transform($user->profile_photo_path) : [],
+                'ktp' => $user->ktp_photo_path ? $images->transform($user->ktp_photo_path) : [],
+            ],
+        ]);
     }
 
     public function update(Request $request, User $user, PrivateImageStorage $images)
@@ -248,7 +255,7 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'Akun dihapus.');
     }
 
-    public function photo(User $user, string $kind)
+    public function photo(Request $request, User $user, string $kind, PrivateImageStorage $images)
     {
         if ($kind === 'ktp') {
             abort_unless(auth()->id() === $user->id || auth()->user()->can('exportuserdata') || auth()->user()->can('edituser'), 403);
@@ -256,6 +263,9 @@ class UserController extends Controller
             abort_unless(auth()->id() === $user->id || auth()->user()->can('menuuser'), 403);
         }
         $path = $kind === 'ktp' ? $user->ktp_photo_path : $user->profile_photo_path;
+        if ($path && $request->query('source') === 'original') {
+            $path = $images->originalStoredPath($path);
+        }
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
         return Storage::disk('local')->response($path, null, ['Cache-Control' => 'private, no-store, max-age=0', 'X-Content-Type-Options' => 'nosniff']);

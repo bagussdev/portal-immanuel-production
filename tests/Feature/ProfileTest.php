@@ -123,6 +123,8 @@ class ProfileTest extends TestCase
         Storage::disk('local')->assertExists($user->ktp_photo_path);
         Storage::disk('local')->assertExists(dirname($user->profile_photo_path).'/originals/'.basename($user->profile_photo_path));
         Storage::disk('local')->assertExists(dirname($user->ktp_photo_path).'/originals/'.basename($user->ktp_photo_path));
+        Storage::disk('local')->assertExists(dirname($user->profile_photo_path).'/originals/'.basename($user->profile_photo_path).'.json');
+        Storage::disk('local')->assertExists(dirname($user->ktp_photo_path).'/originals/'.basename($user->ktp_photo_path).'.json');
         $this->assertSame([900, 900], array_slice(getimagesize(Storage::disk('local')->path($user->profile_photo_path)), 0, 2));
         $this->assertSame([1284, 810], array_slice(getimagesize(Storage::disk('local')->path($user->ktp_photo_path)), 0, 2));
 
@@ -132,12 +134,18 @@ class ProfileTest extends TestCase
         $this->get(route('users.photo', [$user, 'ktp']))
             ->assertOk()
             ->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+        $this->get(route('users.photo', ['user' => $user, 'kind' => 'ktp', 'source' => 'original']))
+            ->assertOk();
         $this->get(route('profile.edit'))
             ->assertOk()
             ->assertSeeText('85,6 × 54 mm')
             ->assertSeeText('Geser vertikal')
             ->assertSee('name="profile_zoom"', false)
             ->assertSee('name="ktp_zoom"', false)
+            ->assertSee('source=original', false)
+            ->assertSee('profileTransform:', false)
+            ->assertSee('x-ref="profileCanvas"', false)
+            ->assertSee('x-ref="ktpCanvas"', false)
             ->assertSee('userImageEditor(', false);
 
         $imageUpdatedAt = $user->updated_at;
@@ -157,6 +165,7 @@ class ProfileTest extends TestCase
 
         $user->refresh();
         $this->assertTrue($user->updated_at->greaterThan($imageUpdatedAt));
+        $this->assertSame(1.8, app(PrivateImageStorage::class)->transform($user->ktp_photo_path)['zoom']);
         $this->assertSame([1284, 810], array_slice(getimagesize(Storage::disk('local')->path($user->ktp_photo_path)), 0, 2));
     }
 

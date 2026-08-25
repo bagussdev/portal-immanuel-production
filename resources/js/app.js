@@ -48,63 +48,115 @@ Alpine.data('appShell', (initial = {}) => ({
     },
 }));
 
-Alpine.data('userImageEditor', (initial = {}) => ({
-    showPassword: false,
-    showConfirmation: false,
-    profilePreview: initial.profileUrl || null,
-    ktpPreview: initial.ktpUrl || null,
-    profileFileName: '',
-    ktpFileName: '',
-    profileCropX: 50,
-    profileCropY: 50,
-    profileZoom: 1,
-    ktpCropX: 50,
-    ktpCropY: 50,
-    ktpZoom: 1,
-    ktpRotation: 0,
-    profileTransformChanged: false,
-    ktpTransformChanged: false,
-    previewFile(event, kind) {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        const preview = URL.createObjectURL(file);
-        if (kind === 'profile') {
-            this.profilePreview = preview;
-            this.profileFileName = file.name;
-            this.profileCropX = 50;
-            this.profileCropY = 50;
-            this.profileZoom = 1;
-            this.profileTransformChanged = true;
-        } else {
-            this.ktpPreview = preview;
-            this.ktpFileName = file.name;
-            this.ktpCropX = 50;
-            this.ktpCropY = 50;
-            this.ktpZoom = 1;
-            this.ktpRotation = 0;
+Alpine.data('userImageEditor', (initial = {}) => {
+    const profileTransform = initial.profileTransform || {};
+    const ktpTransform = initial.ktpTransform || {};
+
+    return {
+        showPassword: false,
+        showConfirmation: false,
+        identityOpen: window.innerWidth >= 1280,
+        profilePreview: initial.profileUrl || null,
+        ktpPreview: initial.ktpUrl || null,
+        profileImage: null,
+        ktpImage: null,
+        profileFileName: '',
+        ktpFileName: '',
+        profileCropX: Number(profileTransform.x ?? 50),
+        profileCropY: Number(profileTransform.y ?? 50),
+        profileZoom: Number(profileTransform.zoom ?? 1),
+        ktpCropX: Number(ktpTransform.x ?? 50),
+        ktpCropY: Number(ktpTransform.y ?? 50),
+        ktpZoom: Number(ktpTransform.zoom ?? 1),
+        ktpRotation: 0,
+        profileTransformChanged: false,
+        ktpTransformChanged: false,
+        init() {
+            this.$nextTick(() => {
+                if (this.profilePreview) this.loadPreview('profile', this.profilePreview);
+                if (this.ktpPreview) this.loadPreview('ktp', this.ktpPreview);
+            });
+        },
+        previewFile(event, kind) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            const preview = URL.createObjectURL(file);
+            if (kind === 'profile') {
+                this.profilePreview = preview;
+                this.profileFileName = file.name;
+                this.profileCropX = 50;
+                this.profileCropY = 50;
+                this.profileZoom = 1;
+                this.profileTransformChanged = true;
+            } else {
+                this.ktpPreview = preview;
+                this.ktpFileName = file.name;
+                this.ktpCropX = 50;
+                this.ktpCropY = 50;
+                this.ktpZoom = 1;
+                this.ktpRotation = 0;
+                this.ktpTransformChanged = true;
+            }
+            this.loadPreview(kind, preview);
+        },
+        loadPreview(kind, source) {
+            const image = new Image();
+            image.onload = () => {
+                this[`${kind}Image`] = image;
+                this.$nextTick(() => this.renderPreview(kind));
+            };
+            image.src = source;
+        },
+        rotatedSource(image, rotation) {
+            if (rotation % 360 === 0) return image;
+
+            const swapSides = rotation % 180 !== 0;
+            const canvas = document.createElement('canvas');
+            canvas.width = swapSides ? image.naturalHeight : image.naturalWidth;
+            canvas.height = swapSides ? image.naturalWidth : image.naturalHeight;
+            const context = canvas.getContext('2d');
+            context.translate(canvas.width / 2, canvas.height / 2);
+            context.rotate((rotation * Math.PI) / 180);
+            context.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
+
+            return canvas;
+        },
+        renderPreview(kind) {
+            const image = this[`${kind}Image`];
+            const canvas = this.$refs[`${kind}Canvas`];
+            if (!image || !canvas) return;
+
+            const isProfile = kind === 'profile';
+            const outputWidth = isProfile ? 900 : 1284;
+            const outputHeight = isProfile ? 900 : 810;
+            const rotation = isProfile ? 0 : Number(this.ktpRotation);
+            const source = this.rotatedSource(image, rotation);
+            const sourceWidth = source.naturalWidth || source.width;
+            const sourceHeight = source.naturalHeight || source.height;
+            const zoom = Number(this[`${kind}Zoom`]);
+            const positionX = Number(this[`${kind}CropX`]) / 100;
+            const positionY = Number(this[`${kind}CropY`]) / 100;
+            const scale = Math.min(outputWidth / sourceWidth, outputHeight / sourceHeight) * zoom;
+            const renderWidth = Math.max(1, Math.round(sourceWidth * scale));
+            const renderHeight = Math.max(1, Math.round(sourceHeight * scale));
+            const destinationX = Math.round((outputWidth - renderWidth) * positionX);
+            const destinationY = Math.round((outputHeight - renderHeight) * positionY);
+
+            canvas.width = outputWidth;
+            canvas.height = outputHeight;
+            const context = canvas.getContext('2d');
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, outputWidth, outputHeight);
+            context.drawImage(source, destinationX, destinationY, renderWidth, renderHeight);
+        },
+        rotateKtp(step) {
+            this.ktpRotation = (this.ktpRotation + step + 360) % 360;
             this.ktpTransformChanged = true;
-        }
-    },
-    profileStyle() {
-        return {
-            objectPosition: `${this.profileCropX}% ${this.profileCropY}%`,
-            transformOrigin: `${this.profileCropX}% ${this.profileCropY}%`,
-            transform: `scale(${this.profileZoom})`,
-        };
-    },
-    ktpStyle() {
-        const rotationScale = this.ktpRotation % 180 ? 0.63 : 1;
-        return {
-            objectPosition: `${this.ktpCropX}% ${this.ktpCropY}%`,
-            transformOrigin: `${this.ktpCropX}% ${this.ktpCropY}%`,
-            transform: `rotate(${this.ktpRotation}deg) scale(${this.ktpZoom * rotationScale})`,
-        };
-    },
-    rotateKtp(step) {
-        this.ktpRotation = (this.ktpRotation + step + 360) % 360;
-        this.ktpTransformChanged = true;
-    },
-}));
+            this.$nextTick(() => this.renderPreview('ktp'));
+        },
+    };
+});
 
 function setupResponsiveTable(wrapper) {
     if (wrapper.dataset.scrollReady === 'true') return;

@@ -13,10 +13,16 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function edit(Request $request): View
+    public function edit(Request $request, PrivateImageStorage $images): View
     {
+        $user = $request->user();
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'imageTransforms' => [
+                'profile' => $user->profile_photo_path ? $images->transform($user->profile_photo_path) : [],
+                'ktp' => $user->ktp_photo_path ? $images->transform($user->ktp_photo_path) : [],
+            ],
         ]);
     }
 
