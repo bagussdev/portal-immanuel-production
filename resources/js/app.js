@@ -88,6 +88,7 @@ Alpine.data('userImageEditor', (initial = {}) => ({
     profileStyle() {
         return {
             objectPosition: `${this.profileCropX}% ${this.profileCropY}%`,
+            transformOrigin: `${this.profileCropX}% ${this.profileCropY}%`,
             transform: `scale(${this.profileZoom})`,
         };
     },
@@ -95,6 +96,7 @@ Alpine.data('userImageEditor', (initial = {}) => ({
         const rotationScale = this.ktpRotation % 180 ? 0.63 : 1;
         return {
             objectPosition: `${this.ktpCropX}% ${this.ktpCropY}%`,
+            transformOrigin: `${this.ktpCropX}% ${this.ktpCropY}%`,
             transform: `rotate(${this.ktpRotation}deg) scale(${this.ktpZoom * rotationScale})`,
         };
     },

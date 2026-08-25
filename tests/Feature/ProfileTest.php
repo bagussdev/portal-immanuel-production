@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\PrivateImageStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -25,6 +26,36 @@ class ProfileTest extends TestCase
             ->assertSeeText('Foto KTP')
             ->assertSeeText('Ubah password')
             ->assertSee("window.addEventListener('pageshow', hideFullScreenLoader)", false);
+    }
+
+    public function test_uploaded_photo_remains_fully_visible_before_zooming(): void
+    {
+        Storage::fake('local');
+
+        $stored = app(PrivateImageStorage::class)->store(
+            UploadedFile::fake()->image('portrait.jpg', 100, 200),
+            'users/profile',
+            0,
+            [
+                'output_width' => 300,
+                'output_height' => 300,
+                'x' => 50,
+                'y' => 50,
+                'zoom' => 1,
+            ],
+        );
+
+        $result = imagecreatefromjpeg(Storage::disk('local')->path($stored['path']));
+        $corner = imagecolorsforindex($result, imagecolorat($result, 0, 0));
+        $center = imagecolorsforindex($result, imagecolorat($result, 150, 150));
+
+        $this->assertGreaterThan(240, $corner['red']);
+        $this->assertGreaterThan(240, $corner['green']);
+        $this->assertGreaterThan(240, $corner['blue']);
+        $this->assertLessThan(20, $center['red'] + $center['green'] + $center['blue']);
+        $this->assertSame([100, 200], array_slice(getimagesize(Storage::disk('local')->path(dirname($stored['path']).'/originals/'.basename($stored['path']))), 0, 2));
+
+        imagedestroy($result);
     }
 
     public function test_profile_information_can_be_updated(): void
@@ -95,8 +126,12 @@ class ProfileTest extends TestCase
         $this->assertSame([900, 900], array_slice(getimagesize(Storage::disk('local')->path($user->profile_photo_path)), 0, 2));
         $this->assertSame([1284, 810], array_slice(getimagesize(Storage::disk('local')->path($user->ktp_photo_path)), 0, 2));
 
-        $this->get(route('users.photo', [$user, 'profile']))->assertOk();
-        $this->get(route('users.photo', [$user, 'ktp']))->assertOk();
+        $this->get(route('users.photo', [$user, 'profile']))
+            ->assertOk()
+            ->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+        $this->get(route('users.photo', [$user, 'ktp']))
+            ->assertOk()
+            ->assertHeader('Cache-Control', 'max-age=0, no-store, private');
         $this->get(route('profile.edit'))
             ->assertOk()
             ->assertSeeText('85,6 × 54 mm')
@@ -104,6 +139,9 @@ class ProfileTest extends TestCase
             ->assertSee('name="profile_zoom"', false)
             ->assertSee('name="ktp_zoom"', false)
             ->assertSee('userImageEditor(', false);
+
+        $imageUpdatedAt = $user->updated_at;
+        $this->travel(1)->minute();
 
         $this->patch(route('profile.update'), [
             'name' => $user->name,
@@ -117,6 +155,8 @@ class ProfileTest extends TestCase
             'ktp_transform_changed' => 1,
         ])->assertSessionHasNoErrors();
 
+        $user->refresh();
+        $this->assertTrue($user->updated_at->greaterThan($imageUpdatedAt));
         $this->assertSame([1284, 810], array_slice(getimagesize(Storage::disk('local')->path($user->ktp_photo_path)), 0, 2));
     }
 

@@ -118,9 +118,11 @@ class UserController extends Controller
         if (empty($data['password'])) {
             unset($data['password']);
         }
+        $imageChanged = false;
         try {
             foreach ([['profile_photo', 'profile_photo_path', 'remove_profile_photo'], ['ktp_photo', 'ktp_photo_path', 'remove_ktp_photo']] as [$input, $column, $remove]) {
                 if ($request->hasFile($input)) {
+                    $imageChanged = true;
                     $rotation = $input === 'ktp_photo' ? (int) ($data['ktp_rotation'] ?? 0) : 0;
                     $kind = $input === 'ktp_photo' ? 'ktp' : 'profile';
                     $newPath = $images->store(
@@ -134,10 +136,12 @@ class UserController extends Controller
                     }
                     $data[$column] = $newPath;
                 } elseif ($request->boolean($remove)) {
+                    $imageChanged = true;
                     $images->deleteStored($user->{$column});
                     $data[$column] = null;
                 } elseif ($user->{$column}) {
                     if ($input === 'ktp_photo' && (int) ($data['ktp_rotation'] ?? 0) !== 0) {
+                        $imageChanged = true;
                         if (! $images->rotateStored($user->ktp_photo_path, (int) $data['ktp_rotation'])) {
                             throw new \RuntimeException('KTP tidak dapat diputar.');
                         }
@@ -146,6 +150,7 @@ class UserController extends Controller
                     if ($request->boolean("{$kind}_transform_changed") && ! $images->cropStored($user->{$column}, $this->cropOptions($data, $kind))) {
                         throw new \RuntimeException('Posisi foto tidak dapat disimpan.');
                     }
+                    $imageChanged = $imageChanged || $request->boolean("{$kind}_transform_changed");
                 }
                 unset($data[$input], $data[$remove]);
             }
@@ -155,6 +160,9 @@ class UserController extends Controller
         $this->forgetImageInputs($data);
         $before = $user->only(['name', 'username', 'email', 'no_telf', 'role_id', 'active']);
         $user->update($data);
+        if ($imageChanged) {
+            $user->touch();
+        }
         AuditTrail::record('user.updated', $user, $before, $user->only(array_keys($before)));
 
         return redirect()->route('users.index')->with('success', 'Akun berhasil diperbarui.');
@@ -250,7 +258,7 @@ class UserController extends Controller
         $path = $kind === 'ktp' ? $user->ktp_photo_path : $user->profile_photo_path;
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
-        return Storage::disk('local')->response($path, null, ['Cache-Control' => 'private, max-age=3600', 'X-Content-Type-Options' => 'nosniff']);
+        return Storage::disk('local')->response($path, null, ['Cache-Control' => 'private, no-store, max-age=0', 'X-Content-Type-Options' => 'nosniff']);
     }
 
     public function exportPdf()

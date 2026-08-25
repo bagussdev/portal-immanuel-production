@@ -204,37 +204,16 @@ class PrivateImageStorage
     {
         $width = imagesx($image);
         $height = imagesy($image);
-        $aspectWidth = max(1, (float) ($crop['aspect_width'] ?? 1));
-        $aspectHeight = max(1, (float) ($crop['aspect_height'] ?? 1));
-        $aspect = $aspectWidth / $aspectHeight;
+        $outputWidth = max(1, (int) ($crop['output_width'] ?? $width));
+        $outputHeight = max(1, (int) ($crop['output_height'] ?? $height));
         $zoom = min(max((float) ($crop['zoom'] ?? 1), 1), 4);
         $positionX = min(max((float) ($crop['x'] ?? 50), 0), 100) / 100;
         $positionY = min(max((float) ($crop['y'] ?? 50), 0), 100) / 100;
-
-        if ($width / $height > $aspect) {
-            $baseHeight = $height;
-            $baseWidth = $height * $aspect;
-        } else {
-            $baseWidth = $width;
-            $baseHeight = $width / $aspect;
-        }
-
-        $cropWidth = max(1, min($width, (int) round($baseWidth / $zoom)));
-        $cropHeight = max(1, min($height, (int) round($baseHeight / $zoom)));
-        $cropX = (int) round(($width - $cropWidth) * $positionX);
-        $cropY = (int) round(($height - $cropHeight) * $positionY);
-        $cropped = imagecrop($image, [
-            'x' => $cropX,
-            'y' => $cropY,
-            'width' => $cropWidth,
-            'height' => $cropHeight,
-        ]);
-        if ($cropped === false) {
-            return $image;
-        }
-
-        $outputWidth = max(1, (int) ($crop['output_width'] ?? $cropWidth));
-        $outputHeight = max(1, (int) ($crop['output_height'] ?? $cropHeight));
+        $scale = min($outputWidth / $width, $outputHeight / $height) * $zoom;
+        $renderWidth = max(1, (int) round($width * $scale));
+        $renderHeight = max(1, (int) round($height * $scale));
+        $destinationX = (int) round(($outputWidth - $renderWidth) * $positionX);
+        $destinationY = (int) round(($outputHeight - $renderHeight) * $positionY);
         $canvas = imagecreatetruecolor($outputWidth, $outputHeight);
         if ($mimeType === 'image/jpeg') {
             $white = imagecolorallocate($canvas, 255, 255, 255);
@@ -248,17 +227,16 @@ class PrivateImageStorage
 
         imagecopyresampled(
             $canvas,
-            $cropped,
+            $image,
+            $destinationX,
+            $destinationY,
             0,
             0,
-            0,
-            0,
-            $outputWidth,
-            $outputHeight,
-            imagesx($cropped),
-            imagesy($cropped),
+            $renderWidth,
+            $renderHeight,
+            $width,
+            $height,
         );
-        imagedestroy($cropped);
         imagedestroy($image);
 
         return $canvas;

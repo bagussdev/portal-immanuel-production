@@ -24,6 +24,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
         $data = $request->validated();
+        $imageChanged = false;
         if (isset($data['username'])) {
             $data['username'] = strtolower($data['username']);
         }
@@ -31,6 +32,7 @@ class ProfileController extends Controller
         try {
             foreach ([['profile_photo', 'profile_photo_path', 'remove_profile_photo'], ['ktp_photo', 'ktp_photo_path', 'remove_ktp_photo']] as [$input, $column, $remove]) {
                 if ($request->hasFile($input)) {
+                    $imageChanged = true;
                     $rotation = $input === 'ktp_photo' ? (int) ($data['ktp_rotation'] ?? 0) : 0;
                     $directory = $input === 'ktp_photo' ? 'users/ktp' : 'users/profile';
                     $kind = $input === 'ktp_photo' ? 'ktp' : 'profile';
@@ -45,10 +47,12 @@ class ProfileController extends Controller
                     }
                     $data[$column] = $newPath;
                 } elseif ($request->boolean($remove)) {
+                    $imageChanged = true;
                     $images->deleteStored($user->{$column});
                     $data[$column] = null;
                 } elseif ($user->{$column}) {
                     if ($input === 'ktp_photo' && (int) ($data['ktp_rotation'] ?? 0) !== 0) {
+                        $imageChanged = true;
                         if (! $images->rotateStored($user->ktp_photo_path, (int) $data['ktp_rotation'])) {
                             throw new \RuntimeException('KTP tidak dapat diputar.');
                         }
@@ -57,6 +61,7 @@ class ProfileController extends Controller
                     if ($request->boolean("{$kind}_transform_changed") && ! $images->cropStored($user->{$column}, $this->cropOptions($data, $kind))) {
                         throw new \RuntimeException('Posisi foto tidak dapat disimpan.');
                     }
+                    $imageChanged = $imageChanged || $request->boolean("{$kind}_transform_changed");
                 }
                 unset($data[$input], $data[$remove]);
             }
@@ -72,6 +77,9 @@ class ProfileController extends Controller
         }
 
         $user->save();
+        if ($imageChanged) {
+            $user->touch();
+        }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

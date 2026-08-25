@@ -96,7 +96,7 @@
 
         <div class="relative border-t border-sky-100 p-4 dark:border-white/10">
             <div class="flex items-center gap-3 rounded-2xl bg-sky-50 p-3 dark:bg-white/[.06]">
-                @if(Auth::user()->profile_photo_path)<img src="{{ route('users.photo', [Auth::user(), 'profile']) }}" class="h-10 w-10 shrink-0 rounded-xl object-cover" alt="">@else<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-sm font-extrabold text-white dark:bg-red-600">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>@endif
+                @if(Auth::user()->profile_photo_path)<img src="{{ route('users.photo', ['user' => Auth::user(), 'kind' => 'profile', 'v' => Auth::user()->updated_at?->getTimestamp()]) }}" class="h-10 w-10 shrink-0 rounded-xl object-cover" alt="">@else<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-sm font-extrabold text-white dark:bg-red-600">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>@endif
                 <div class="min-w-0 flex-1"><p class="truncate text-sm font-bold text-slate-900 dark:text-white">{{ Auth::user()->name }}</p><p class="truncate text-xs font-semibold text-slate-500">{{ $roleName }}</p></div>
                 <form method="POST" action="{{ route('logout') }}" onsubmit="return confirmAndLoad('Keluar dari aplikasi?')">@csrf<button type="submit" class="rounded-lg p-2 text-slate-500 hover:bg-red-500/10 hover:text-red-400" aria-label="Keluar"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M10 17l5-5-5-5M15 12H3M14 3h7v18h-7" /></svg></button></form>
             </div>
@@ -125,7 +125,7 @@
                     </button>
                     @can('notification')<x-notifications.bell :limit="10" />@endcan
                     <a href="{{ route('profile.edit') }}" onclick="showFullScreenLoader();" class="flex items-center gap-3 rounded-xl border border-sky-200 bg-white px-2 py-2 shadow-sm hover:border-sky-300 dark:border-white/10 dark:bg-white/[.06] sm:px-3">
-                        @if(Auth::user()->profile_photo_path)<img src="{{ route('users.photo', [Auth::user(), 'profile']) }}" class="h-8 w-8 rounded-lg object-cover" alt="">@else<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-950 text-xs font-extrabold text-white dark:bg-red-600">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>@endif
+                        @if(Auth::user()->profile_photo_path)<img src="{{ route('users.photo', ['user' => Auth::user(), 'kind' => 'profile', 'v' => Auth::user()->updated_at?->getTimestamp()]) }}" class="h-8 w-8 rounded-lg object-cover" alt="">@else<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-950 text-xs font-extrabold text-white dark:bg-red-600">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>@endif
                         <div class="hidden min-w-0 sm:block"><p class="max-w-32 truncate text-xs font-bold text-slate-900 dark:text-white">{{ Auth::user()->name }}</p><p class="text-[10px] font-semibold text-slate-500">{{ $roleName }}</p></div>
                     </a>
                 </div>
