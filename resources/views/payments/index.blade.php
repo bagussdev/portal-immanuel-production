@@ -14,7 +14,6 @@
             $perPage = $perPage ?? request('per_page', 5);
         @endphp
 
-        {{-- TOOLBAR --}}
         <form id="periodForm" method="GET" action="{{ route('payments.index') }}"
             class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 lg:p-5 shadow mb-4 relative"
             onsubmit="showFullScreenLoader();">
@@ -32,7 +31,6 @@
                         class="inline-flex min-h-9 items-center justify-center gap-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 sm:px-3 sm:py-2 sm:text-sm">Next
                         ›</button>
 
-                    {{-- Filter toggle (tampil di semua ukuran) --}}
                     <button type="button" id="filterToggleBtn"
                         class="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 sm:gap-2 sm:px-3 sm:py-2 sm:text-sm">
                         <span>Filter</span>
@@ -45,11 +43,9 @@
                 </div>
             </div>
 
-            {{-- PANEL FILTER (hidden default; desktop absolute, mobile inline) --}}
             <div id="filterPanel"
                 class="hidden mt-3 grid grid-cols-12 gap-3 md:absolute md:right-4 md:top-14 md:w-[780px] md:bg-white md:dark:bg-gray-800 md:border md:border-gray-200 md:dark:border-gray-700 md:rounded-xl md:shadow-xl md:p-4 z-20">
 
-                {{-- Mode --}}
                 <div class="col-span-12 md:col-span-4">
                     <label class="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-300">Mode</label>
                     <div id="segmentedToggle"
@@ -65,7 +61,6 @@
                     </div>
                 </div>
 
-                {{-- Pickers --}}
                 <div class="col-span-12 md:col-span-8">
                     <div class="grid grid-cols-12 gap-3">
                         <div id="monthlyWrap"
@@ -83,12 +78,9 @@
                     </div>
                 </div>
 
-                {{-- Search --}}
                 <div class="col-span-12">
                     <label class="block mb-1 text-xs font-medium text-gray-600 dark:text-gray-300">Pencarian</label>
 
-                    {{-- Mobile: search + date sejajar, Reset full di bawah
-                    Desktop: semua sejajar dalam satu baris --}}
                     <div class="flex flex-row flex-wrap sm:flex-nowrap items-stretch gap-2">
                         <input name="search" id="searchInput" type="text" value="{{ $search }}"
                             placeholder="Cari invoice no / client / notes / user"
@@ -98,7 +90,6 @@
                         <input name="exact_date" id="exactDateInput" type="date" value="{{ $exactDate }}"
                             class="w-36 shrink-0 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600
                             bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                        {{-- Reset: full-width di mobile, inline di desktop --}}
                         <x-action-button :href="route('payments.index')" onclick="showFullScreenLoader();" text="Reset" color="blue" :dense="true" class="basis-full sm:basis-auto" />
                     </div>
                 </div>
@@ -111,7 +102,6 @@
             </div>
         </form>
 
-        {{-- SUMMARY CARDS --}}
         <div class="mb-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
             <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800 sm:p-4">
                 <div class="text-xs text-gray-500">Total Pembayaran</div>
@@ -139,7 +129,6 @@
             </div>
         </div>
 
-        {{-- TABLE --}}
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="overflow-x-auto" id="paymentsList">
                 <table class="min-w-full text-sm whitespace-nowrap">
@@ -227,7 +216,6 @@
                     const monthlyWrap = document.getElementById('monthlyWrap');
                     const weeklyWrap = document.getElementById('weeklyWrap');
 
-                    // === Filter dropdown logic ===
                     const toggleBtn = document.getElementById('filterToggleBtn');
                     const panel = document.getElementById('filterPanel');
 
@@ -244,7 +232,6 @@
                         if (panel?.classList.contains('hidden')) openPanel();
                         else closePanel();
                     });
-                    // close when clicking outside panel (bukan seluruh form)
                     document.addEventListener('click', (e) => {
                         if (!panel || panel.classList.contains('hidden')) return;
                         if (!panel.contains(e.target) && e.target !== toggleBtn) closePanel();
@@ -253,7 +240,6 @@
                         if (e.key === 'Escape') closePanel();
                     });
 
-                    // === Auto submit ===
                     function submitNow() {
                         form?.submit();
                     }
@@ -304,7 +290,6 @@
                     searchEl?.addEventListener('input', onSearch);
                     exactEl?.addEventListener('change', submitNow);
 
-                    // === List.js sorting (tri-state) ===
                     const list = new List('paymentsList', {
                         valueNames: [
                             'no', 'invoice_number',

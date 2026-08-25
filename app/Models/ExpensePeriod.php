@@ -28,7 +28,6 @@ class ExpensePeriod extends Model
         'closed_at' => 'datetime',
     ];
 
-    /* ===================== Scopes ===================== */
 
     /**
      * BUMP:
@@ -91,7 +90,6 @@ class ExpensePeriod extends Model
         return $q->where('year', (int) $now->year)->where('month', (int) $now->month);
     }
 
-    /* ===================== Status helpers ===================== */
 
     public function isOpen(): bool
     {
@@ -114,7 +112,6 @@ class ExpensePeriod extends Model
         return str_pad((string) $this->month, 2, '0', STR_PAD_LEFT).'/'.$this->year;
     }
 
-    /* ===================== Factory helpers ===================== */
 
     /**
      * Ambil/buat period berdasarkan tanggal (string/Carbon).
@@ -184,7 +181,6 @@ class ExpensePeriod extends Model
             ]);
     }
 
-    /* ===================== Mutators (actions) ===================== */
 
     /** Paksa OPEN (jarang dipakai; normalnya otomatis saat bulan berjalan) */
     public function open(): void

@@ -44,17 +44,17 @@
 
             @foreach($fieldJob->stages as $stage)
                 @php
-                    $stageItems = $fieldJob->items;
+                    $stageItems = $stage->field_job_site_id ? $fieldJob->items->where('field_job_site_id', $stage->field_job_site_id) : $fieldJob->items;
                     $isAssigned = $stage->assignees->contains('id', auth()->id());
                     $canAct = $canManage || $isAssigned;
-                    $teardownStage = $stage->type === FieldJobStage::TYPE_INSTALL ? $fieldJob->stages->firstWhere('type', FieldJobStage::TYPE_TEARDOWN) : null;
+                    $teardownStage = $stage->type === FieldJobStage::TYPE_INSTALL ? $fieldJob->stages->first(fn($candidate) => $candidate->type === FieldJobStage::TYPE_TEARDOWN && $candidate->field_job_site_id === $stage->field_job_site_id) : null;
                     $copyTeamToTeardown = $teardownStage && ($teardownStage->assignees->isEmpty() || $teardownStage->assignees->pluck('id')->sort()->values()->all() === $stage->assignees->pluck('id')->sort()->values()->all());
                 @endphp
 
                 <x-responsive-disclosure
                     id="stage-{{ $stage->id }}"
                     kicker="Tahap pekerjaan"
-                    title="{{ $stage->label() }}"
+                    title="{{ $stage->label() }}{{ $stage->site?->name ? ' - '.$stage->site->name : '' }}"
                     description="{{ optional($stage->scheduled_at)->translatedFormat('l, d F Y · H:i') ?: 'Jadwal belum diatur' }}"
                     :mobile-open="$stage->status === FieldJobStage::STATUS_IN_PROGRESS"
                     content-class="p-0"
@@ -217,7 +217,7 @@
                             @if($canManage)
                                 <form method="POST" action="{{ route('field-jobs.stages.assignments', [$fieldJob, $stage]) }}" class="rounded-xl border border-sky-100 p-4 dark:border-white/10">
                                     @csrf @method('PUT')
-                                    <h3 class="ip-section-title">Atur anggota</h3>
+                                    <div class="flex items-center justify-between gap-2"><h3 class="ip-section-title">Atur anggota</h3><div class="flex gap-2"><button type="button" class="text-xs font-extrabold text-sky-700" onclick="this.closest('form').querySelectorAll('input[name=\'assignee_ids[]\']').forEach(el => el.checked = true)">Pilih semua</button><button type="button" class="text-xs font-extrabold text-slate-400" onclick="this.closest('form').querySelectorAll('input[name=\'assignee_ids[]\']').forEach(el => el.checked = false)">Kosongkan</button></div></div>
                                     <div class="mt-3 max-h-56 space-y-2 overflow-y-auto pr-1">
                                         @foreach($teamMembers as $member)
                                             <label class="flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-sky-50 dark:hover:bg-white/[.04]">

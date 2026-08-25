@@ -54,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::get('invoices/sync/changes', [InvoiceController::class, 'changes'])->name('invoices.sync.changes');
     Route::post('invoices/{invoice}/issue', [InvoiceController::class, 'issue'])->name('invoices.issue');
     Route::post('invoices/{invoice}/payments', [InvoiceController::class, 'storePayment'])->name('invoices.payments.store');
+    Route::post('invoices/{invoice}/complete', [InvoiceController::class, 'complete'])->name('invoices.complete');
     Route::patch('invoices/{invoice}/payments/{payment}/void', [InvoiceController::class, 'voidPayment'])->name('invoices.payments.void');
     Route::get('invoices/{invoice}/payments/{payment}/attachment', [InvoiceController::class, 'paymentAttachment'])->name('invoices.payments.attachment');
     Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'exportPdf'])->name('invoices.export.pdf');
@@ -64,6 +65,7 @@ Route::middleware('auth')->group(function () {
     Route::get('payroll/rows', [PayrollController::class, 'rows'])->name('payroll.rows');
     Route::get('payroll/{payroll}/slip-pdf', [PayrollController::class, 'slipPdf'])->name('payroll.slip.pdf');
     Route::patch('payroll/{payroll}/pay', [PayrollController::class, 'pay'])->name('payroll.pay');
+    Route::patch('payroll/period/{period}/pay-all', [PayrollController::class, 'payAll'])->name('payroll.period.pay-all');
     Route::post('payroll/period/open', [PayrollController::class, 'openPeriod'])->name('payroll.period.open');
     Route::patch('payroll/period/{period}/close', [PayrollController::class, 'closePeriod'])->name('payroll.period.close');
     Route::patch('payroll/period/{period}/reopen', [PayrollController::class, 'reopenPeriod'])->name('payroll.period.reopen');
@@ -80,6 +82,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::get('/schedule/detail/{invoice}', [ScheduleController::class, 'show'])->name('schedule.show');
 
+    Route::get('/field-jobs/history', [FieldJobController::class, 'history'])->name('field-jobs.history');
     Route::get('/field-jobs', [FieldJobController::class, 'index'])->name('field-jobs.index');
     Route::get('/field-jobs/{fieldJob}', [FieldJobController::class, 'show'])->name('field-jobs.show');
     Route::put('/field-jobs/{fieldJob}/stages/{stage}/assignments', [FieldJobController::class, 'updateAssignments'])->name('field-jobs.stages.assignments');
@@ -98,6 +101,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications/preferences', [NotificationPreferenceController::class, 'index'])->name('notifications.preferences.index');
     Route::post('/notifications/preferences', [NotificationPreferenceController::class, 'store'])->name('notifications.preferences.store');
 
+    Route::get('/users/export/pdf', [UserController::class, 'exportPdf'])->name('users.export.pdf');
+    Route::get('/users/{user}/photo/{kind}', [UserController::class, 'photo'])->whereIn('kind', ['profile', 'ktp'])->name('users.photo');
     Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.active');
     Route::patch('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactive');
     Route::resource('users', UserController::class);

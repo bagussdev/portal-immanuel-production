@@ -27,6 +27,7 @@
 
                     <div class="flex flex-wrap items-center gap-2">
                         <x-status-badge :status="$invoice->status" />
+                        @can('adddp')@if(in_array($invoice->status,['unpaid','partial','overdue','overpaid']) && !$invoice->resolved_at)<form method="POST" action="{{ route('invoices.complete',$invoice) }}" onsubmit="return confirmAndLoad('Selesaikan invoice dan catat pelunasan sisanya?')">@csrf<input type="hidden" name="paid_at" value="{{ today()->format('Y-m-d') }}"><button class="ip-btn bg-emerald-500 text-white hover:bg-emerald-600">Selesaikan</button></form>@endif @endcan
 
                         @if ($invoice->invoice_number)
                             <a target="_blank" href="{{ route('invoices.export.pdf', $invoice) }}" class="ip-btn border border-white/20 bg-white/10 text-white hover:bg-white/20">
@@ -95,30 +96,7 @@
 
             <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr),380px]">
                 <x-responsive-disclosure kicker="Rincian" title="Item invoice" description="{{ $invoice->items->count() }} item pekerjaan" :mobile-open="true" content-class="p-0">
-                    <div class="ip-table-wrap">
-                        <table class="ip-table min-w-[680px]">
-                            <thead><tr><th>Item</th><th>Qty</th><th>Panjang</th><th class="text-right">Harga / total</th></tr></thead>
-                            <tbody>
-                                @forelse ($invoice->items as $item)
-                                    <tr>
-                                        <td class="font-bold text-slate-900 dark:text-white">{{ $item->item_name }}</td>
-                                        <td>{{ (float) $item->qty > 0 ? (float) $item->qty : '' }}</td>
-                                        <td>{{ filled($item->length) && (float) $item->length > 0 ? (float) $item->length : '' }}</td>
-                                        @if ($item->price_group)
-                                            @if (! isset($renderedPriceGroups[$item->price_group]))
-                                                @php($renderedPriceGroups[$item->price_group] = true)
-                                                <td rowspan="{{ $priceGroupCounts[$item->price_group] }}" class="border-l border-sky-100 text-right align-middle font-extrabold text-slate-900 dark:border-white/10 dark:text-white">{{ $rupiahOrBlank($item->total) }}</td>
-                                            @endif
-                                        @else
-                                            <td class="text-right font-extrabold text-slate-900 dark:text-white">{{ $rupiahOrBlank($item->total) }}</td>
-                                        @endif
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="4" class="py-12 text-center text-slate-500">Belum ada item invoice.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                    @include('documents._location-items', ['document' => $invoice])
                 </x-responsive-disclosure>
 
                 <aside class="rounded-2xl bg-sky-950 p-5 text-white shadow-xl dark:bg-[#0b0c0f]">

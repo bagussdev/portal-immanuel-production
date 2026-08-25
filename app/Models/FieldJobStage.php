@@ -22,7 +22,7 @@ class FieldJobStage extends Model
     public const STATUS_COMPLETED = 'completed';
 
     protected $fillable = [
-        'field_job_id', 'type', 'scheduled_at', 'status', 'is_active', 'notes',
+        'field_job_id', 'field_job_site_id', 'type', 'scheduled_at', 'status', 'is_active', 'notes',
         'started_at', 'started_by', 'completed_at', 'completed_by',
     ];
 
@@ -36,6 +36,11 @@ class FieldJobStage extends Model
     public function fieldJob(): BelongsTo
     {
         return $this->belongsTo(FieldJob::class);
+    }
+
+    public function site(): BelongsTo
+    {
+        return $this->belongsTo(FieldJobSite::class, 'field_job_site_id');
     }
 
     public function assignees(): BelongsToMany

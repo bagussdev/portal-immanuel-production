@@ -3,29 +3,29 @@
         <x-alert-information />
         <div class="ip-page max-w-6xl">
             <header class="ip-page-header">
-                <div><p class="ip-kicker">Keamanan</p><h1 class="ip-title">Management User</h1><p class="ip-subtitle">Kelola akun, role, dan status user.</p></div>
-                @can('createuser')
+                <div><p class="ip-kicker">Keamanan</p><h1 class="ip-title">Management User</h1><p class="ip-subtitle">Kelola identitas, akun, dan akses user.</p></div>
+                <div class="flex flex-wrap gap-2">@can('exportuserdata')<a href="{{ route('users.export.pdf') }}" target="_blank" class="ip-btn-secondary">Export PDF</a>@endcan @can('createuser')
                     <a href="{{ route('users.create') }}" class="ip-btn-primary">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
                         Tambah akun
                     </a>
-                @endcan
+                @endcan</div>
             </header>
 
             <form class="ip-card flex gap-3 p-4">
-                <div class="relative flex-1"><svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="m20 20-4-4"/></svg><input name="search" value="{{ $search }}" placeholder="Cari nama atau email" class="ip-input pl-10"></div>
+                <div class="relative flex-1"><svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="m20 20-4-4"/></svg><input name="search" value="{{ $search }}" placeholder="Cari nama, username, atau email" class="ip-input pl-10"></div>
                 <button class="ip-btn-dark">Cari</button>
             </form>
 
             <div class="ip-card">
                 <div class="ip-table-wrap">
                     <table class="ip-table min-w-[860px]">
-                        <thead><tr><th>Pengguna</th><th>Email</th><th>Role</th><th>Status</th><th class="text-right">Aksi</th></tr></thead>
+                        <thead><tr><th>Pengguna</th><th>Kontak</th><th>Role</th><th>Status</th><th class="text-right">Aksi</th></tr></thead>
                         <tbody>
                             @foreach ($users as $user)
                                 <tr>
-                                    <td><div class="flex items-center gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-950 text-xs font-extrabold text-white shadow-sm dark:bg-red-600">{{ strtoupper(substr($user->name, 0, 1)) }}</span><span class="font-extrabold text-slate-900 dark:text-white">{{ $user->name }}</span></div></td>
-                                    <td>{{ $user->email }}</td>
+                                    <td><div class="flex items-center gap-3">@if($user->profile_photo_path)<img src="{{ route('users.photo', [$user, 'profile']) }}" class="h-10 w-10 rounded-xl object-cover" alt="">@else<span class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-950 text-xs font-extrabold text-white shadow-sm dark:bg-red-600">{{ strtoupper(substr($user->name, 0, 1)) }}</span>@endif<span><strong class="block text-slate-900 dark:text-white">{{ $user->name }}</strong><small class="text-slate-400">{{ '@'.$user->username }}</small></span></div></td>
+                                    <td><span class="block">{{ $user->email }}</span><small class="text-slate-400">{{ $user->no_telf ?: '-' }}</small></td>
                                     <td><span class="font-bold capitalize text-slate-700 dark:text-slate-300">{{ $user->role?->name ?: '-' }}</span></td>
                                     <td><x-status-badge :status="$user->active ? 'active' : 'inactive'" /></td>
                                     <td class="whitespace-nowrap text-right">

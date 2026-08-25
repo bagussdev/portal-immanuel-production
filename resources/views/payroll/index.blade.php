@@ -5,7 +5,7 @@
     $pct = $stats['total'] > 0 ? round($stats['paid'] / $stats['total'] * 100) : 0;
 @endphp
 <div class="ip-page">
-    <header class="ip-page-header"><div><p class="ip-kicker">Keuangan tim</p><h1 class="ip-title">Penggajian</h1><p class="ip-subtitle">Input slip, tandai pembayaran langsung, lalu tutup periode setelah seluruh gaji selesai.</p></div><div class="flex flex-wrap items-center gap-2">@if($locks['period_exists'])<x-status-badge :status="$periodStatus" />@else<x-status-badge status="unknown" label="Belum dibuka" />@endif<span class="text-sm font-extrabold text-slate-900">{{ $periodName }}</span></div></header>
+    <header class="ip-page-header"><div><p class="ip-kicker">Keuangan tim</p><h1 class="ip-title">Penggajian</h1><p class="ip-subtitle">Slip dan pembayaran per periode.</p></div><div class="flex flex-wrap items-center gap-2">@if($locks['period_exists'])<x-status-badge :status="$periodStatus" />@else<x-status-badge status="unknown" label="Belum dibuka" />@endif<span class="text-sm font-extrabold text-slate-900">{{ $periodName }}</span></div></header>
 
     <section class="ip-card p-4">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -17,6 +17,7 @@
             </form>
             <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                 @can('addpayroll')<a href="{{ route('payroll.create',['month'=>$month,'year'=>$year]) }}" onclick="showFullScreenLoader();" class="ip-btn-primary w-full sm:w-auto {{ $locks['can_add'] ? '' : 'pointer-events-none opacity-50' }}">+ Tambah slip</a>@endcan
+                @can('paypayroll')@if($locks['period_exists'] && in_array($periodStatus,['open','reopen'],true) && $stats['draft'] > 0)<form action="{{ route('payroll.period.pay-all',$period) }}?month={{ $month }}&year={{ $year }}" method="POST" onsubmit="return confirmAndLoad('Bayar semua {{ $stats['draft'] }} slip draft pada periode ini?')">@csrf @method('PATCH')<button class="ip-btn w-full bg-emerald-600 text-white hover:bg-emerald-700 sm:w-auto">Bayar semua</button></form>@endif @endcan
                 @can('managepayroll')
                     @if($locks['can_open'])<form action="{{ route('payroll.period.open') }}" method="POST" onsubmit="return confirmAndLoad('Buka periode penggajian ini?')">@csrf<input type="hidden" name="month" value="{{ $month }}"><input type="hidden" name="year" value="{{ $year }}"><button class="ip-btn-primary w-full sm:w-auto">Buka periode</button></form>@endif
                     @if($locks['period_exists'] && in_array($periodStatus,['open','reopen'],true))<form action="{{ route('payroll.period.close',$period) }}?month={{ $month }}&year={{ $year }}" method="POST" onsubmit="return confirmAndLoad('Tutup periode ini? Semua slip harus sudah dibayar.')">@csrf @method('PATCH')<button class="ip-btn-danger w-full sm:w-auto">Tutup periode</button></form>@endif

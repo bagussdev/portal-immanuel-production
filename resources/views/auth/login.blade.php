@@ -51,10 +51,10 @@
                 <form method="POST" action="{{ route('login') }}" class="mt-7 space-y-5" onsubmit="showFullScreenLoader();">
                     @csrf
                     <div>
-                        <label for="email" class="ip-label">Email</label>
+                        <label for="login" class="ip-label">Username atau email</label>
                         <div class="relative">
                             <span class="pointer-events-none absolute inset-y-0 left-0 flex w-12 items-center justify-center text-slate-400"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18v12H3zM3 7l9 7 9-7"/></svg></span>
-                            <input id="email" class="ip-input min-h-12 pl-12" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" placeholder="nama@immanuel.com">
+                            <input id="login" class="ip-input min-h-12 pl-12" type="text" name="login" value="{{ old('login') }}" required autofocus autocomplete="username" placeholder="username atau email">
                         </div>
                     </div>
 

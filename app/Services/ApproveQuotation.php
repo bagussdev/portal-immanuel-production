@@ -11,7 +11,7 @@ class ApproveQuotation
     public function handle(Quotation $quotation, int $userId): Invoice
     {
         return DB::transaction(function () use ($quotation, $userId) {
-            $quotation = Quotation::query()->lockForUpdate()->findOrFail($quotation->id);
+            $quotation = Quotation::query()->with(['locations.items', 'items'])->lockForUpdate()->findOrFail($quotation->id);
 
             if ($quotation->invoice) {
                 return $quotation->invoice;
@@ -34,6 +34,7 @@ class ApproveQuotation
                 'event_name' => $quotation->event_name,
                 'location_event' => $quotation->location_event,
                 'event_date' => $quotation->event_date,
+                'event_end_date' => $quotation->event_end_date,
                 'loading_date' => $quotation->loading_date,
                 'bongkaran_date' => $quotation->bongkaran_date,
                 'work_flow' => Invoice::FLOW_INSTALL_TEARDOWN,
@@ -46,15 +47,34 @@ class ApproveQuotation
                 'created_by' => $userId,
             ]);
 
-            foreach ($quotation->items as $item) {
-                $invoice->items()->create([
-                    'qty' => $item->qty,
-                    'item_name' => $item->item_name,
-                    'length' => $item->length,
-                    'unit_price' => $item->unit_price,
-                    'total' => $item->total,
-                    'price_group' => $item->price_group,
+            $locations = $quotation->locations->isNotEmpty()
+                ? $quotation->locations
+                : collect([(object) [
+                    'id' => null, 'name' => $quotation->location_event,
+                    'event_start_date' => $quotation->event_date, 'event_end_date' => $quotation->event_end_date,
+                    'loading_date' => $quotation->loading_date, 'teardown_date' => $quotation->bongkaran_date,
+                    'work_flow' => Invoice::FLOW_INSTALL_TEARDOWN, 'sort_order' => 0, 'items' => $quotation->items,
+                ]]);
+
+            foreach ($locations as $sourceLocation) {
+                $invoiceLocation = $invoice->locations()->create([
+                    'quotation_location_id' => $sourceLocation->id,
+                    'name' => $sourceLocation->name,
+                    'event_start_date' => $sourceLocation->event_start_date,
+                    'event_end_date' => $sourceLocation->event_end_date,
+                    'loading_date' => $sourceLocation->loading_date,
+                    'teardown_date' => $sourceLocation->teardown_date,
+                    'work_flow' => $sourceLocation->work_flow ?: Invoice::FLOW_INSTALL_TEARDOWN,
+                    'sort_order' => $sourceLocation->sort_order,
                 ]);
+                foreach ($sourceLocation->items as $item) {
+                    $invoiceLocation->items()->create([
+                        'invoice_id' => $invoice->id,
+                        'qty' => $item->qty, 'item_name' => $item->item_name, 'length' => $item->length,
+                        'pricing_mode' => $item->pricing_mode, 'unit_price' => $item->unit_price,
+                        'total' => $item->total, 'price_group' => $item->price_group,
+                    ]);
+                }
             }
 
             $invoice->recalcTotalsAndStatus();

@@ -30,7 +30,6 @@
 
         <hr class="h-[3px] my-8 bg-gray-200 border-0 dark:bg-gray-700 w-full">
 
-        {{-- Table --}}
         <div class="w-full overflow-x-auto">
             <div class="min-w-full inline-block align-middle">
                 <div class="overflow-hidden shadow rounded-lg" id="clientList" data-list>
@@ -109,7 +108,6 @@
             </div>
         </div>
 
-        {{-- Polling footer --}}
         <div id="pollFooter"
             class="mt-2 mb-4 flex items-center justify-between text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 px-4">
             <span class="inline-flex items-center">
@@ -124,7 +122,6 @@
         @push('scripts')
             <script>
                 document.addEventListener("DOMContentLoaded", function() {
-                    // ===== Init List.js =====
                     const list = new List('clientList', {
                         valueNames: ['no', 'name', 'company', 'email', 'phone'],
                     });
@@ -183,11 +180,9 @@
                         });
                     });
 
-                    // ===== Polling delta per-row (gaya Equipment) =====
                     const tbody = document.getElementById('clientBody');
                     if (!tbody) return;
 
-                    // footer UI
                     const pollDot = document.getElementById('pollDot');
                     const pollLbl = document.getElementById('pollLabel');
                     const lastLbl = document.getElementById('lastUpdatedAt');
@@ -251,7 +246,6 @@
 
                             const u = new URL(changesUrl, window.location.origin);
                             u.searchParams.set('since', lastTs);
-                            // kirim visible[]
                             tbody.querySelectorAll('tr[data-id]').forEach(tr => {
                                 u.searchParams.append('visible[]', tr.getAttribute('data-id'));
                             });
@@ -272,7 +266,6 @@
                             } = j || {};
                             let changed = false;
 
-                            // hapus deleted
                             if (deleted.length) {
                                 deleted.forEach(id => {
                                     const row = tbody.querySelector(`tr[data-id="${id}"]`);
@@ -281,7 +274,6 @@
                                 changed = true;
                             }
 
-                            // ambil rows utk created+updated
                             const need = [...new Set([...updated, ...created])];
                             if (need.length) {
                                 const ru = new URL(rowsUrl, window.location.origin);
@@ -332,7 +324,6 @@
                         }
                     });
 
-                    // highlight instan (?highlight=ID)
                     async function tryInstantHighlight() {
                         const params = new URLSearchParams(location.search);
                         const highlightId = params.get('highlight');
@@ -359,7 +350,6 @@
                         } catch {}
                     }
 
-                    // start
                     updateLastUpdated();
                     tryInstantHighlight();
                     schedule(baseInterval, 'init');

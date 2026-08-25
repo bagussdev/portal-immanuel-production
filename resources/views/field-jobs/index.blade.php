@@ -10,14 +10,20 @@
                 </div>
             </header>
 
+            <div class="inline-flex w-fit rounded-xl border border-sky-100 bg-white p-1 dark:border-white/10 dark:bg-white/[.04]">
+                <a href="{{ route('field-jobs.index') }}" class="rounded-lg px-4 py-2 text-sm font-extrabold {{ !$history ? 'bg-sky-700 text-white dark:bg-red-600' : 'text-slate-500' }}">Aktif</a>
+                <a href="{{ route('field-jobs.history') }}" class="rounded-lg px-4 py-2 text-sm font-extrabold {{ $history ? 'bg-sky-700 text-white dark:bg-red-600' : 'text-slate-500' }}">History</a>
+            </div>
+
             <form class="ip-card flex flex-col gap-3 p-4 sm:flex-row">
                 <input name="search" value="{{ $search }}" placeholder="Cari nomor pekerjaan, client, acara, atau lokasi" class="ip-input flex-1">
                 <select name="status" class="ip-input sm:w-56">
                     <option value="">Semua status</option>
-                    @foreach(['pending' => 'Belum mulai', 'in_progress' => 'Dikerjakan', 'completed' => 'Selesai', 'cancelled' => 'Dibatalkan'] as $value => $label)
+                    @foreach(($history ? ['completed' => 'Selesai', 'cancelled' => 'Dibatalkan'] : ['pending' => 'Belum mulai', 'in_progress' => 'Dikerjakan']) as $value => $label)
                         <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
+                @if($history)<input type="hidden" name="history" value="1">@endif
                 <button class="ip-btn-dark">Terapkan filter</button>
             </form>
 
@@ -40,7 +46,7 @@
                             </div>
                             <div>
                                 <p class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Lokasi</p>
-                                <p class="mt-1 truncate text-sm font-bold text-slate-800 dark:text-slate-200">{{ $job->location ?: '-' }}</p>
+                                <p class="mt-1 truncate text-sm font-bold text-slate-800 dark:text-slate-200">{{ $job->sites->pluck('name')->filter()->join(', ') ?: ($job->location ?: '-') }}</p>
                             </div>
                         </div>
 

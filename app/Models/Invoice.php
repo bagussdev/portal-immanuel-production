@@ -34,18 +34,18 @@ class Invoice extends Model
 
     protected $fillable = [
         'invoice_number', 'client_id', 'bank_detail_id', 'quotation_id', 'event_name', 'location_event',
-        'event_date', 'issue_date', 'due_date', 'loading_date', 'bongkaran_date', 'work_flow',
+        'event_date', 'event_end_date', 'issue_date', 'due_date', 'loading_date', 'bongkaran_date', 'work_flow',
         'status', 'subtotal', 'discount_percent', 'discount_value', 'tax_percent',
         'tax_value', 'grand_total', 'total_paid', 'balance_due', 'notes', 'operational_notes', 'created_by',
         'issued_at', 'issued_by', 'voided_at', 'voided_by', 'void_reason',
-        'schedule_reminded_at',
+        'resolved_at', 'resolved_by', 'resolution_note', 'schedule_reminded_at',
     ];
 
     protected $casts = [
-        'event_date' => 'date', 'issue_date' => 'date', 'due_date' => 'date',
+        'event_date' => 'date', 'event_end_date' => 'date', 'issue_date' => 'date', 'due_date' => 'date',
         'loading_date' => 'datetime', 'bongkaran_date' => 'datetime',
         'discount_percent' => 'decimal:2', 'tax_percent' => 'decimal:2',
-        'issued_at' => 'datetime', 'voided_at' => 'datetime',
+        'issued_at' => 'datetime', 'voided_at' => 'datetime', 'resolved_at' => 'datetime',
         'schedule_reminded_at' => 'datetime',
     ];
 
@@ -69,6 +69,11 @@ class Invoice extends Model
         return $this->hasMany(InvoiceItem::class);
     }
 
+    public function locations(): HasMany
+    {
+        return $this->hasMany(InvoiceLocation::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(InvoicePayment::class);
@@ -87,6 +92,11 @@ class Invoice extends Model
     public function issuer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'issued_by');
+    }
+
+    public function resolver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'resolved_by');
     }
 
     public static function nextNumber(): string
@@ -162,6 +172,9 @@ class Invoice extends Model
 
     public function scopeOpen($query)
     {
-        return $query->whereIn('status', [self::STATUS_UNPAID, self::STATUS_PARTIAL, self::STATUS_OVERDUE]);
+        return $query->where(function ($query) {
+            $query->whereIn('status', [self::STATUS_UNPAID, self::STATUS_PARTIAL, self::STATUS_OVERDUE])
+                ->orWhere(fn ($overpaid) => $overpaid->where('status', self::STATUS_OVERPAID)->whereNull('resolved_at'));
+        });
     }
 }

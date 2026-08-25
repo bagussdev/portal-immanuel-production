@@ -23,28 +23,42 @@ class FieldJobController extends Controller
         $this->authorize('fieldjobsmenu');
         $search = trim((string) $request->input('search'));
         $status = (string) $request->input('status');
+        $history = $request->boolean('history');
 
         $jobs = FieldJob::query()
             ->visibleTo($request->user())
-            ->with(['activeStages' => fn ($query) => $query
-                ->with('assignees:id,name')->orderBy('scheduled_at')])
+            ->with([
+                'sites:id,field_job_id,name',
+                'activeStages' => fn ($query) => $query
+                    ->with('assignees:id,name')->orderBy('scheduled_at'),
+            ])
             ->when($search, fn ($query) => $query->where(function ($query) use ($search) {
                 $query->where('job_number', 'like', "%{$search}%")
                     ->orWhere('client_name', 'like', "%{$search}%")
                     ->orWhere('event_name', 'like', "%{$search}%")
-                    ->orWhere('location', 'like', "%{$search}%");
+                    ->orWhere('location', 'like', "%{$search}%")
+                    ->orWhereHas('sites', fn ($sites) => $sites->where('name', 'like', "%{$search}%"));
             }))
             ->when(in_array($status, [
                 FieldJob::STATUS_PENDING, FieldJob::STATUS_IN_PROGRESS,
                 FieldJob::STATUS_COMPLETED, FieldJob::STATUS_CANCELLED,
             ], true), fn ($query) => $query->where('status', $status))
+            ->when(! $status && $history, fn ($query) => $query->whereIn('status', [FieldJob::STATUS_COMPLETED, FieldJob::STATUS_CANCELLED]))
+            ->when(! $status && ! $history, fn ($query) => $query->whereIn('status', [FieldJob::STATUS_PENDING, FieldJob::STATUS_IN_PROGRESS]))
             ->orderByRaw('COALESCE(loading_date, event_date) IS NULL')
             ->orderBy('loading_date')
             ->latest('id')
             ->paginate(min(max((int) $request->input('per_page', 12), 6), 60))
             ->withQueryString();
 
-        return view('field-jobs.index', compact('jobs', 'search', 'status'));
+        return view('field-jobs.index', compact('jobs', 'search', 'status', 'history'));
+    }
+
+    public function history(Request $request): View
+    {
+        $request->merge(['history' => 1]);
+
+        return $this->index($request);
     }
 
     public function show(Request $request, FieldJob $fieldJob): View
@@ -53,9 +67,9 @@ class FieldJobController extends Controller
         $this->ensureCanView($request->user(), $fieldJob);
 
         $fieldJob->load([
-            'items',
+            'sites.items', 'items',
             'stages' => fn ($query) => $query->where('is_active', true)
-                ->with(['assignees:id,name', 'photos.uploader:id,name', 'starter:id,name', 'completer:id,name'])
+                ->with(['site', 'assignees:id,name', 'photos.uploader:id,name', 'starter:id,name', 'completer:id,name'])
                 ->orderByRaw("CASE type WHEN 'install' THEN 1 WHEN 'one_way' THEN 2 ELSE 3 END"),
         ]);
 
@@ -93,7 +107,7 @@ class FieldJobController extends Controller
         $stage->assignees()->sync($sync);
 
         if ($stage->type === FieldJobStage::TYPE_INSTALL && $request->boolean('copy_to_teardown')) {
-            $teardown = $fieldJob->stages()->where('type', FieldJobStage::TYPE_TEARDOWN)
+            $teardown = $fieldJob->stages()->where('field_job_site_id', $stage->field_job_site_id)->where('type', FieldJobStage::TYPE_TEARDOWN)
                 ->where('is_active', true)->first();
             $teardown?->assignees()->sync($sync);
         }

@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PayrollPeriod extends Model
 {
-    /** ===== Status enum ===== */
     public const STATUS_OPEN = 'open';
 
     public const STATUS_CLOSED = 'closed';
@@ -33,7 +32,6 @@ class PayrollPeriod extends Model
         'reopened_at' => 'datetime',
     ];
 
-    /** ===== Relationships ===== */
     public function payrolls(): HasMany
     {
         return $this->hasMany(Payroll::class);
@@ -54,7 +52,6 @@ class PayrollPeriod extends Model
         return $this->belongsTo(User::class, 'reopened_by')->withDefault();
     }
 
-    /** ===== Scopes ===== */
     public function scopeForMonthYear($q, int $month, int $year)
     {
         return $q->where('month', $month)->where('year', $year);
@@ -75,13 +72,11 @@ class PayrollPeriod extends Model
         return $q->where('status', self::STATUS_REOPEN);
     }
 
-    /** Periode aktif untuk input/edit (open atau reopen) */
     public function scopeActive($q)
     {
         return $q->whereIn('status', [self::STATUS_OPEN, self::STATUS_REOPEN]);
     }
 
-    /** ===== Helpers ===== */
     public function label(): string
     {
         return sprintf('%02d/%d', (int) $this->month, (int) $this->year);
@@ -102,15 +97,12 @@ class PayrollPeriod extends Model
         return $this->status === self::STATUS_REOPEN;
     }
 
-    /** aktif untuk input/edit */
     public function allowsEditing(): bool
     {
         return in_array($this->status, [self::STATUS_OPEN, self::STATUS_REOPEN], true);
     }
 
-    /** ===== State transitions ===== */
 
-    /** Set ke OPEN (pembukaan awal) */
     public function markOpened(?int $userId = null): void
     {
         $this->update([
@@ -120,7 +112,6 @@ class PayrollPeriod extends Model
         ]);
     }
 
-    /** Tutup periode (CLOSED) */
     public function markClosed(?int $userId = null): void
     {
         $this->update([
@@ -130,7 +121,6 @@ class PayrollPeriod extends Model
         ]);
     }
 
-    /** Reopen periode (status = REOPEN) */
     public function markReopened(?int $userId = null): void
     {
         $this->update([

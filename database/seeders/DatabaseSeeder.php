@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
             'fieldjobsmenu', 'managefieldjobs', 'updatefieldjobstatus', 'uploadfieldjobphotos',
             'expensesmenu', 'createexpenses', 'editexpenses', 'deleteexpenses', 'manageexpenses',
             'payrollmenu', 'addpayroll', 'editpayroll', 'paypayroll', 'managepayroll',
-            'menuuser', 'createuser', 'edituser', 'usercontrol', 'permission', 'notification',
+            'menuuser', 'createuser', 'edituser', 'usercontrol', 'exportuserdata', 'permission', 'notification',
         ];
 
         $permissionModels = collect($permissions)
@@ -57,10 +57,10 @@ class DatabaseSeeder extends Seeder
         ])->pluck('id'));
 
         $accounts = [
-            ['role' => 'master', 'name' => 'Master', 'email' => 'master@immanuel.test'],
-            ['role' => 'admin', 'name' => 'Admin', 'email' => 'admin@immanuel.test'],
-            ['role' => 'mandor', 'name' => 'Mandor', 'email' => 'mandor@immanuel.test'],
-            ['role' => 'user', 'name' => 'User', 'email' => 'user@immanuel.test'],
+            ['role' => 'master', 'name' => 'Master', 'username' => 'master', 'email' => 'master@immanuel.test'],
+            ['role' => 'admin', 'name' => 'Admin', 'username' => 'admin', 'email' => 'admin@immanuel.test'],
+            ['role' => 'mandor', 'name' => 'Mandor', 'username' => 'mandor', 'email' => 'mandor@immanuel.test'],
+            ['role' => 'user', 'name' => 'User', 'username' => 'user', 'email' => 'user@immanuel.test'],
         ];
 
         foreach ($accounts as $account) {
@@ -68,6 +68,7 @@ class DatabaseSeeder extends Seeder
                 ['email' => $account['email']],
                 [
                     'name' => $account['name'],
+                    'username' => $account['username'],
                     'role_id' => $roles[$account['role']]->id,
                     'active' => true,
                     'password' => Hash::make($seedPassword),

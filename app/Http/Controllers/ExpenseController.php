@@ -49,7 +49,6 @@ class ExpenseController extends Controller
         return [$period, $locks];
     }
 
-    /* ============== Helpers ============== */
     private function cleanCurrency($value): int
     {
         if ($value === null || $value === '') {
@@ -83,7 +82,6 @@ class ExpenseController extends Controller
             ->orderByDesc('id');
     }
 
-    /* ============== Index (seed polling) ============== */
     public function index(Request $request)
     {
         $this->authorize('expensesmenu');
@@ -157,7 +155,6 @@ class ExpenseController extends Controller
         ]);
     }
 
-    /* ============== POLLING: heartbeat changes (JSON) ============== */
     public function changes(Request $request)
     {
         $this->authorize('expensesmenu');
@@ -200,7 +197,6 @@ class ExpenseController extends Controller
         ]);
     }
 
-    /* ============== POLLING: render rows (HTML <tr>…) ============== */
     public function rows(Request $request)
     {
         $this->authorize('expensesmenu');
@@ -235,7 +231,6 @@ class ExpenseController extends Controller
         ]);
     }
 
-    /* ============== CREATE ============== */
     public function create(Request $request)
     {
         $this->authorize('createexpenses');
@@ -283,7 +278,6 @@ class ExpenseController extends Controller
         ]);
     }
 
-    /* ============== STORE ============== */
     public function store(Request $request)
     {
         $this->authorize('createexpenses');
@@ -350,7 +344,6 @@ class ExpenseController extends Controller
             ->with('success', 'Expense berhasil ditambahkan.');
     }
 
-    /* ============== EDIT/UPDATE/DESTROY============== */
 
     public function edit(Request $request, Expense $expense)
     {
@@ -491,7 +484,6 @@ class ExpenseController extends Controller
         abort(404);
     }
 
-    /* ============== Period Actions ============== */
     public function periodReopen(ExpensePeriod $period)
     {
         $this->authorize('manageexpenses');

@@ -1,0 +1,15 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Data Crew</title><style>
+@page{size:A4;margin:39mm 12mm 15mm}*{box-sizing:border-box}body{margin:0;font-family:DejaVu Sans,sans-serif;font-size:9px;color:#1e293b}.header{position:fixed;top:-30mm;left:0;right:0;height:25mm;border-bottom:2px solid #dc2626}.header table{width:100%;border-collapse:collapse}.header img{width:108px}.company{text-align:right;line-height:1.45}.company strong{display:block;font-size:15px;color:#0f172a}.title{text-align:center;margin-bottom:12px}.title h1{margin:0;color:#0f172a;font-size:17px;letter-spacing:.6px}.title p{margin:4px 0 0;color:#64748b}.count{display:inline-block;margin-top:6px;padding:4px 8px;border-radius:12px;background:#eaf4fb;color:#0369a1;font-weight:bold}table.crew{width:100%;border-collapse:collapse}table.crew thead{display:table-header-group}table.crew tr{page-break-inside:avoid}table.crew th{padding:7px 5px;background:#0f172a;color:#fff;text-transform:uppercase;font-size:8px;letter-spacing:.4px}table.crew td{height:25mm;padding:5px;border:1px solid #cbd5e1;vertical-align:middle}.no{width:28px;text-align:center}.name{width:125px}.phone{width:88px}.photo{width:85px;text-align:center}.ktp{width:155px;text-align:center}.profile-img{max-width:68px;max-height:22mm}.ktp-img{max-width:145px;max-height:22mm}.placeholder{color:#94a3b8;font-style:italic}.username{display:block;margin-top:3px;color:#64748b;font-size:8px}.page-number{position:fixed;bottom:-9mm;right:0;color:#64748b;font-size:8px}.page-number:after{content:"Halaman " counter(page)}
+</style></head><body>
+<div class="header"><table><tr><td><img src="{{ public_path('assets/logo.png') }}" alt="Logo"></td><td class="company"><strong>IMMANUEL PRODUCTION</strong>Jl. Mekar Blok D1 No 15<br>Denpasar Selatan, Denpasar, Bali<br>admin@immanuelproduction.com | 0818550837</td></tr></table></div>
+<div class="page-number"></div>
+<div class="title"><h1>DATA CREW IMMANUEL PRODUCTION</h1><p>Dicetak {{ now()->translatedFormat('d F Y, H:i') }}</p><span class="count">Total crew aktif: {{ $users->count() }} orang</span></div>
+<table class="crew"><thead><tr><th class="no">No</th><th class="name">Nama</th><th class="photo">Foto</th><th class="ktp">KTP</th><th class="phone">No. Telp</th></tr></thead><tbody>
+@foreach($users as $user)
+@php
+    $profile = $user->profile_photo_path ? Storage::disk('local')->path($user->profile_photo_path) : null;
+    $ktp = $user->ktp_photo_path ? Storage::disk('local')->path($user->ktp_photo_path) : null;
+@endphp
+<tr><td class="no">{{ $loop->iteration }}</td><td class="name"><strong>{{ $user->name }}</strong></td><td class="photo">@if($profile && file_exists($profile))<img class="profile-img" src="{{ $profile }}" alt="">@else<span class="placeholder">Belum ada</span>@endif</td><td class="ktp">@if($ktp && file_exists($ktp))<img class="ktp-img" src="{{ $ktp }}" alt="">@else<span class="placeholder">Belum ada</span>@endif</td><td class="phone">{{ $user->no_telf ?: '-' }}</td></tr>
+@endforeach
+</tbody></table></body></html>

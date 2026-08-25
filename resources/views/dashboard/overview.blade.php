@@ -1,5 +1,10 @@
 <x-app-layout><x-dashboard.sidebar><x-alert-information />
 <div class="ip-page">
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-100 bg-white p-3 dark:border-white/10 dark:bg-white/[.04]">
+        <a href="{{ route('dashboard',['month'=>$selectedMonth->copy()->subMonth()->format('Y-m')]) }}" class="ip-btn-secondary" aria-label="Bulan sebelumnya">&larr;</a>
+        <form method="GET" class="flex items-center gap-2"><input type="month" name="month" value="{{ $selectedMonth->format('Y-m') }}" class="ip-input !w-auto !py-2 text-sm" onchange="this.form.submit()"><noscript><button class="ip-btn-dark">Pilih</button></noscript></form>
+        <a href="{{ route('dashboard',['month'=>$selectedMonth->copy()->addMonth()->format('Y-m')]) }}" class="ip-btn-secondary" aria-label="Bulan berikutnya">&rarr;</a>
+    </div>
     <section class="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-sky-700 via-sky-800 to-slate-950 px-6 py-6 text-white shadow-xl dark:from-[#11151e] dark:via-[#0b0c0f] dark:to-black sm:px-8 sm:py-7">
         <div class="absolute -right-16 -top-24 h-72 w-72 rounded-full bg-sky-300/20 blur-3xl dark:bg-red-600/25"></div>
         <div class="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
@@ -10,17 +15,17 @@
 
     @if($canFinance)
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <a href="{{ route('invoices.index',['status'=>'unpaid']) }}" class="ip-card p-5 hover:-translate-y-0.5"><div class="flex items-start justify-between"><p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Invoice terbuka</p><span class="rounded-lg bg-red-50 p-2 text-red-600"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" /></svg></span></div><p class="mt-4 text-3xl font-extrabold text-slate-950">{{ $invoiceStats['open'] }}</p></a>
+            <div class="ip-card p-5"><div class="flex items-start justify-between"><p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Total invoice</p><span class="rounded-lg bg-sky-50 p-2 font-bold text-sky-600">Rp</span></div><p class="mt-4 text-2xl font-extrabold tracking-tight text-slate-950">Rp {{ number_format($invoiceStats['totalInvoice'],0,',','.') }}</p></div>
             <div class="ip-card p-5"><div class="flex items-start justify-between"><p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Sisa piutang</p><span class="rounded-lg bg-amber-50 p-2 text-amber-600">Rp</span></div><p class="mt-4 text-2xl font-extrabold tracking-tight text-slate-950">Rp {{ number_format($invoiceStats['receivable'],0,',','.') }}</p></div>
-            <a href="{{ route('payments.index') }}" class="ip-card p-5 hover:-translate-y-0.5"><div class="flex items-start justify-between"><p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Masuk bulan ini</p><span class="rounded-lg bg-emerald-50 p-2 text-emerald-600"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6" /></svg></span></div><p class="mt-4 text-2xl font-extrabold tracking-tight text-emerald-600">Rp {{ number_format($invoiceStats['paidThisMonth'],0,',','.') }}</p></a>
-            <a href="{{ route('quotations.index',['status'=>'draft']) }}" class="ip-card p-5 hover:-translate-y-0.5"><div class="flex items-start justify-between"><p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Quotation draft</p><span class="rounded-lg bg-slate-100 p-2 text-slate-600"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4zM8 9h8M8 13h5" /></svg></span></div><p class="mt-4 text-3xl font-extrabold text-slate-950">{{ $invoiceStats['draftQuotations'] }}</p></a>
+            <a href="{{ route('payments.index') }}" class="ip-card p-5 hover:-translate-y-0.5"><div class="flex items-start justify-between"><p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Pembayaran masuk</p><span class="rounded-lg bg-emerald-50 p-2 text-emerald-600"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6" /></svg></span></div><p class="mt-4 text-2xl font-extrabold tracking-tight text-emerald-600">Rp {{ number_format($invoiceStats['paidThisMonth'],0,',','.') }}</p></a>
+            <a href="{{ route('invoices.index') }}" class="ip-card p-5 hover:-translate-y-0.5"><div class="flex items-start justify-between"><p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Invoice aktif</p><span class="rounded-lg bg-red-50 p-2 text-red-600"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" /></svg></span></div><p class="mt-4 text-3xl font-extrabold text-slate-950">{{ $invoiceStats['open'] }}</p></a>
         </div>
     @endif
 
     <div class="grid gap-6 {{ $canFinance ? 'xl:grid-cols-[1.35fr_.65fr]' : '' }}">
         @can('fieldjobsmenu')
         <section class="ip-card ip-card-body">
-            <div class="flex items-center justify-between gap-4"><div><p class="ip-kicker">Agenda</p><h2 class="mt-1 ip-section-title">Pasang & bongkar terdekat</h2></div><a href="{{ route('field-jobs.index') }}" class="text-xs font-extrabold text-red-600">Lihat jadwal</a></div>
+            <div class="flex items-center justify-between gap-4"><div><p class="ip-kicker">Agenda</p><h2 class="mt-1 ip-section-title">Jadwal {{ $selectedMonth->locale('id')->translatedFormat('F Y') }}</h2></div><a href="{{ route('field-jobs.index') }}" class="text-xs font-extrabold text-red-600">Lihat jadwal</a></div>
             <div class="mt-5 divide-y divide-sky-100 dark:divide-white/[.07]">
                 @forelse($upcomingStages as $stage)
                     <a href="{{ route('field-jobs.show',$stage->fieldJob) }}" class="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
@@ -38,7 +43,7 @@
         @endif
     </div>
 
-    <section class="ip-card ip-card-body"><div class="flex items-center justify-between gap-4"><div><p class="ip-kicker">Penggajian</p><h2 class="mt-1 ip-section-title">Periode {{ now()->locale('id')->translatedFormat('F Y') }}</h2></div>@can('payrollmenu')<a href="{{ route('payroll.index') }}" class="text-xs font-extrabold text-red-600">Buka penggajian</a>@endcan</div>
+    <section class="ip-card ip-card-body"><div class="flex items-center justify-between gap-4"><div><p class="ip-kicker">Penggajian</p><h2 class="mt-1 ip-section-title">Periode {{ $selectedMonth->locale('id')->translatedFormat('F Y') }}</h2></div>@can('payrollmenu')<a href="{{ route('payroll.index',['month'=>$selectedMonth->month,'year'=>$selectedMonth->year]) }}" class="text-xs font-extrabold text-red-600">Buka penggajian</a>@endcan</div>
         @if(auth()->user()->canViewAllPayrolls())
             <div class="mt-5 grid gap-3 sm:grid-cols-3"><div class="rounded-xl bg-slate-50 p-4"><p class="text-xs font-bold text-slate-500">Total slip</p><p class="mt-2 text-2xl font-extrabold">{{ $payrollStats['total'] }}</p></div><div class="rounded-xl bg-emerald-50 p-4"><p class="text-xs font-bold text-emerald-600">Sudah dibayar</p><p class="mt-2 text-2xl font-extrabold text-emerald-700">{{ $payrollStats['paid'] }}</p></div><div class="rounded-xl bg-slate-950 p-4 text-white"><p class="text-xs font-bold text-slate-400">Total bersih</p><p class="mt-2 text-xl font-extrabold">Rp {{ number_format($payrollStats['net'],0,',','.') }}</p></div></div>
         @else

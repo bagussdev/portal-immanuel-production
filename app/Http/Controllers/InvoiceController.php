@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use App\Services\AuditTrail;
 use App\Services\DocumentTotals;
+use App\Services\DocumentLocations;
 use App\Services\FieldJobSynchronizer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -25,16 +26,25 @@ class InvoiceController extends Controller
         $this->authorize('invoicemenu');
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
+        $history = $request->boolean('history');
         $invoices = Invoice::with(['client', 'creator', 'quotation'])
             ->when($search, fn ($q) => $q->where(fn ($qq) => $qq
                 ->where('invoice_number', 'like', "%{$search}%")
                 ->orWhere('event_name', 'like', "%{$search}%")
                 ->orWhereHas('client', fn ($client) => $client->where('name', 'like', "%{$search}%"))))
             ->when($status, fn ($q) => $q->where('status', $status))
+            ->when(! $status && $history, fn ($q) => $q->where(function ($query) {
+                $query->whereIn('status', [Invoice::STATUS_PAID, Invoice::STATUS_VOID])
+                    ->orWhere(fn ($overpaid) => $overpaid->where('status', Invoice::STATUS_OVERPAID)->whereNotNull('resolved_at'));
+            }))
+            ->when(! $status && ! $history, fn ($q) => $q->where(function ($query) {
+                $query->whereIn('status', [Invoice::STATUS_DRAFT, Invoice::STATUS_UNPAID, Invoice::STATUS_PARTIAL, Invoice::STATUS_OVERDUE])
+                    ->orWhere(fn ($overpaid) => $overpaid->where('status', Invoice::STATUS_OVERPAID)->whereNull('resolved_at'));
+            }))
             ->latest()->paginate(min(max((int) $request->input('per_page', 10), 5), 100))
             ->withQueryString();
 
-        return view('invoices.index', compact('invoices', 'search', 'status'));
+        return view('invoices.index', compact('invoices', 'search', 'status', 'history'));
     }
 
     public function changes()
@@ -69,12 +79,12 @@ class InvoiceController extends Controller
         $this->authorize('createinvoice');
         $data = $this->validated($request);
         $invoice = DB::transaction(function () use ($data) {
-            [$items, $summary] = $this->prepareItemsAndTotals($data);
+            [$locations, $summary] = $this->prepareLocationsAndTotals($data);
             $invoice = Invoice::create($this->header($data, $summary, $this->resolveClientId($data['client_name'])) + [
                 'status' => Invoice::STATUS_DRAFT,
                 'created_by' => auth()->id(),
             ]);
-            $invoice->items()->createMany($items);
+            $this->saveLocations($invoice, $locations);
             $invoice->recalcTotalsAndStatus();
             AuditTrail::record('invoice.created', $invoice, [], $invoice->toArray());
 
@@ -87,7 +97,7 @@ class InvoiceController extends Controller
     public function show(Invoice $invoice)
     {
         $this->authorize('invoicemenu');
-        $invoice->load(['client', 'bankDetail', 'creator', 'issuer', 'quotation', 'items', 'fieldJob', 'payments.receiver', 'payments.voider']);
+        $invoice->load(['client', 'bankDetail', 'creator', 'issuer', 'quotation', 'locations.items', 'items', 'fieldJob', 'payments.receiver', 'payments.voider']);
 
         return view('invoices.show', compact('invoice'));
     }
@@ -98,7 +108,7 @@ class InvoiceController extends Controller
         if ($invoice->status === Invoice::STATUS_VOID) {
             return redirect()->route('invoices.show', $invoice)->with('error', 'Invoice VOID tidak dapat diedit.');
         }
-        $invoice->load('items');
+        $invoice->load('locations.items');
 
         return view('invoices.edit', [
             'invoice' => $invoice,
@@ -118,10 +128,11 @@ class InvoiceController extends Controller
         $data = $this->validated($request);
         DB::transaction(function () use ($invoice, $data) {
             $before = $invoice->toArray();
-            [$items, $summary] = $this->prepareItemsAndTotals($data);
+            [$locations, $summary] = $this->prepareLocationsAndTotals($data);
             $invoice->update($this->header($data, $summary, $this->resolveClientId($data['client_name'])));
             $invoice->items()->delete();
-            $invoice->items()->createMany($items);
+            $invoice->locations()->delete();
+            $this->saveLocations($invoice, $locations);
             $invoice->recalcTotalsAndStatus();
             if ($invoice->status !== Invoice::STATUS_DRAFT) {
                 app(FieldJobSynchronizer::class)->sync($invoice, auth()->id());
@@ -193,6 +204,45 @@ class InvoiceController extends Controller
         return back()->with('success', 'Pembayaran berhasil dicatat. Pembayaran berikutnya tetap dapat ditambahkan.');
     }
 
+    public function complete(Request $request, Invoice $invoice)
+    {
+        $this->authorize('adddp');
+        if (in_array($invoice->status, [Invoice::STATUS_DRAFT, Invoice::STATUS_VOID, Invoice::STATUS_PAID], true)) {
+            return back()->with('error', 'Invoice ini tidak memerlukan penyelesaian.');
+        }
+
+        $data = $request->validate([
+            'paid_at' => ['nullable', 'date'],
+            'method' => ['nullable', 'string', 'max:50'],
+            'reference' => ['nullable', 'string', 'max:100'],
+            'resolution_note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        DB::transaction(function () use ($invoice, $data) {
+            $invoice->refresh()->recalcTotalsAndStatus();
+            if ((int) $invoice->balance_due > 0) {
+                $payment = $invoice->payments()->create([
+                    'paid_at' => $data['paid_at'] ?? today(),
+                    'amount' => (int) $invoice->balance_due,
+                    'method' => $data['method'] ?? 'Transfer',
+                    'reference' => $data['reference'] ?? 'Pelunasan otomatis',
+                    'notes' => $data['resolution_note'] ?? null,
+                    'received_by' => auth()->id(),
+                ]);
+                AuditTrail::record('invoice.completed_payment', $payment, [], $payment->toArray());
+                $invoice->refresh()->recalcTotalsAndStatus();
+            } elseif ($invoice->status === Invoice::STATUS_OVERPAID) {
+                $invoice->update([
+                    'resolved_at' => now(), 'resolved_by' => auth()->id(),
+                    'resolution_note' => $data['resolution_note'] ?? 'Lebih bayar telah diselesaikan.',
+                ]);
+                AuditTrail::record('invoice.overpayment_resolved', $invoice, [], $invoice->toArray());
+            }
+        });
+
+        return back()->with('success', 'Invoice berhasil diselesaikan.');
+    }
+
     public function voidPayment(Request $request, Invoice $invoice, InvoicePayment $payment)
     {
         $this->authorize('voidpayment');
@@ -221,7 +271,7 @@ class InvoiceController extends Controller
     public function exportPdf(Invoice $invoice)
     {
         $this->authorize('invoicemenu');
-        $invoice->load(['client', 'bankDetail', 'items', 'payments' => fn ($q) => $q->whereNull('voided_at')->orderBy('paid_at')]);
+        $invoice->load(['client', 'bankDetail', 'locations.items', 'items', 'payments' => fn ($q) => $q->whereNull('voided_at')->orderBy('paid_at')]);
         $clientName = Str::of($invoice->client?->name ?: 'Client')
             ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->value();
         $location = Str::of($invoice->location_event ?: '')
@@ -275,9 +325,10 @@ class InvoiceController extends Controller
             'event_name' => ['nullable', 'string', 'max:255'],
             'location_event' => ['nullable', 'string', 'max:255'],
             'event_date' => ['nullable', 'date'],
+            'event_end_date' => ['nullable', 'date', 'after_or_equal:event_date'],
             'loading_date' => ['nullable', 'date'],
             'bongkaran_date' => ['nullable', 'date', 'after_or_equal:loading_date'],
-            'work_flow' => ['required', 'in:install_teardown,install_only,one_way'],
+            'work_flow' => ['nullable', 'in:install_teardown,install_only,one_way'],
             'notes' => ['nullable', 'string', 'max:3000'],
             'operational_notes' => ['nullable', 'string', 'max:3000'],
             'discount_mode' => ['required', 'in:percent,amount'],
@@ -287,43 +338,35 @@ class InvoiceController extends Controller
             'tax_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'tax_value' => ['nullable', 'string', 'max:30'],
             'change_reason' => ['nullable', 'string', 'max:500'],
-            'items' => ['required', 'array', 'min:1'],
+            'items' => ['nullable', 'array', 'min:1', 'required_without:locations'],
             'items.*.item_name' => ['required', 'string', 'max:255'],
             'items.*.qty' => ['required', 'numeric', 'min:0.01'],
             'items.*.length' => ['nullable', 'numeric', 'min:0'],
-            'items.*.unit_price' => ['required', 'string', 'max:30'],
+            'items.*.pricing_mode' => ['nullable', 'in:unit,total'],
+            'items.*.unit_price' => ['nullable', 'string', 'max:30'],
+            'items.*.line_total' => ['nullable', 'string', 'max:30'],
             'items.*.merge_price' => ['nullable', 'boolean'],
+            'locations' => ['nullable', 'array', 'min:1'],
+            'locations.*.name' => ['nullable', 'string', 'max:255'],
+            'locations.*.event_start_date' => ['nullable', 'date'],
+            'locations.*.event_end_date' => ['nullable', 'date', 'after_or_equal:locations.*.event_start_date'],
+            'locations.*.loading_date' => ['nullable', 'date'],
+            'locations.*.teardown_date' => ['nullable', 'date'],
+            'locations.*.work_flow' => ['required_with:locations', 'in:install_teardown,install_only,one_way'],
+            'locations.*.items' => ['required_with:locations', 'array', 'min:1'],
+            'locations.*.items.*.item_name' => ['required', 'string', 'max:255'],
+            'locations.*.items.*.qty' => ['required', 'numeric', 'min:0.01'],
+            'locations.*.items.*.length' => ['nullable', 'numeric', 'min:0'],
+            'locations.*.items.*.pricing_mode' => ['nullable', 'in:unit,total'],
+            'locations.*.items.*.unit_price' => ['nullable', 'string', 'max:30'],
+            'locations.*.items.*.line_total' => ['nullable', 'string', 'max:30'],
+            'locations.*.items.*.merge_price' => ['nullable', 'boolean'],
         ]);
     }
 
-    private function prepareItemsAndTotals(array $data): array
+    private function prepareLocationsAndTotals(array $data): array
     {
-        $items = [];
-        $subtotal = 0;
-        $leaderIndex = null;
-        foreach ($data['items'] as $row) {
-            $qty = (float) $row['qty'];
-            $length = filled($row['length'] ?? null) ? (float) $row['length'] : null;
-            $unitPrice = DocumentTotals::money($row['unit_price']);
-            $mergePrice = filter_var($row['merge_price'] ?? false, FILTER_VALIDATE_BOOLEAN);
-            if ($mergePrice && $leaderIndex !== null) {
-                if (! $items[$leaderIndex]['price_group']) {
-                    $group = (string) Str::uuid();
-                    $subtotal -= $items[$leaderIndex]['total'];
-                    $items[$leaderIndex]['price_group'] = $group;
-                    $items[$leaderIndex]['total'] = $items[$leaderIndex]['unit_price'];
-                    $subtotal += $items[$leaderIndex]['total'];
-                }
-                $items[] = ['item_name' => $row['item_name'], 'qty' => $qty, 'length' => $length, 'unit_price' => 0, 'total' => 0, 'price_group' => $items[$leaderIndex]['price_group']];
-
-                continue;
-            }
-
-            $total = (int) round($qty * (($length ?? 0) > 0 ? $length : 1) * $unitPrice);
-            $subtotal += $total;
-            $items[] = ['item_name' => $row['item_name'], 'qty' => $qty, 'length' => $length, 'unit_price' => $unitPrice, 'total' => $total, 'price_group' => null];
-            $leaderIndex = array_key_last($items);
-        }
+        [$locations, $subtotal] = DocumentLocations::prepare(DocumentLocations::normalize($data, Invoice::FLOW_INSTALL_TEARDOWN));
         $discountPercent = $data['discount_mode'] === 'percent' ? DocumentTotals::decimal($data['discount_percent'] ?? null) : null;
         $taxPercent = $data['tax_mode'] === 'percent' ? DocumentTotals::decimal($data['tax_percent'] ?? null) : null;
         $summary = DocumentTotals::summarize(
@@ -331,23 +374,36 @@ class InvoiceController extends Controller
             $taxPercent, DocumentTotals::money($data['tax_value'] ?? null),
         );
 
-        return [$items, $summary];
+        return [$locations, $summary];
     }
 
     private function header(array $data, array $summary, int $clientId): array
     {
+        $first = DocumentLocations::normalize($data, Invoice::FLOW_INSTALL_TEARDOWN)[0];
         return [
             'client_id' => $clientId, 'bank_detail_id' => $data['bank_detail_id'] ?? null,
             'event_name' => $data['event_name'] ?? null,
-            'location_event' => $data['location_event'] ?? null, 'event_date' => $data['event_date'] ?? null,
-            'loading_date' => $data['loading_date'] ?? null, 'bongkaran_date' => $data['bongkaran_date'] ?? null,
-            'work_flow' => $data['work_flow'],
+            'location_event' => $first['name'] ?? null, 'event_date' => $first['event_start_date'] ?? null,
+            'event_end_date' => $first['event_end_date'] ?? null,
+            'loading_date' => $first['loading_date'] ?? null, 'bongkaran_date' => $first['teardown_date'] ?? null,
+            'work_flow' => $first['work_flow'] ?? Invoice::FLOW_INSTALL_TEARDOWN,
             'notes' => $data['notes'] ?? null, 'operational_notes' => $data['operational_notes'] ?? null,
             'subtotal' => $summary['subtotal'],
             'discount_percent' => $summary['discount_percent'], 'discount_value' => $summary['discount_value'],
             'tax_percent' => $summary['tax_percent'], 'tax_value' => $summary['tax_value'],
             'grand_total' => $summary['grand_total'],
         ];
+    }
+
+    private function saveLocations(Invoice $invoice, array $locations): void
+    {
+        foreach ($locations as $data) {
+            $items = $data['items'];
+            unset($data['items']);
+            $location = $invoice->locations()->create($data);
+            $items = array_map(fn (array $item) => $item + ['invoice_id' => $invoice->id], $items);
+            $location->items()->createMany($items);
+        }
     }
 
     private function resolveClientId(string $name): int

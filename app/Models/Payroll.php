@@ -31,31 +31,26 @@ class Payroll extends Model
         'paid_at' => 'datetime',
     ];
 
-    /** Relasi: slip → periode */
     public function period(): BelongsTo
     {
         return $this->belongsTo(PayrollPeriod::class, 'payroll_period_id');
     }
 
-    /** Relasi: slip → user */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /** Relasi: slip → items */
     public function items(): HasMany
     {
         return $this->hasMany(PayrollItem::class);
     }
 
-    /** Scope bantu: filter berdasarkan periode */
     public function scopeInPeriod($q, int $periodId)
     {
         return $q->where('payroll_period_id', $periodId);
     }
 
-    /** Hitung ulang ringkasan dari items (base & deduction) */
     public function recalcTotals(): void
     {
         $base = (float) $this->items()->where('type', PayrollItem::TYPE_BASE)->sum('amount');
@@ -67,7 +62,6 @@ class Payroll extends Model
         $this->save();
     }
 
-    /** Helper opsional: tambah item base/deduction */
     public function addBase(string $name, float $amount): PayrollItem
     {
         $item = $this->items()->create([
@@ -76,7 +70,6 @@ class Payroll extends Model
             'amount' => $amount,
         ]);
 
-        // recalc dipanggil juga oleh event di PayrollItem, jadi ini opsional
         return $item;
     }
 

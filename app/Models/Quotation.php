@@ -23,14 +23,14 @@ class Quotation extends Model
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
-        'quotation_number', 'client_id', 'bank_detail_id', 'user_id', 'quotation_date', 'event_date',
+        'quotation_number', 'client_id', 'bank_detail_id', 'user_id', 'quotation_date', 'event_date', 'event_end_date',
         'event_name', 'description', 'subtotal', 'discount_percent', 'discount',
         'tax_percent', 'tax_value', 'grand_total', 'loading_date', 'bongkaran_date',
         'status', 'converted_to_invoice', 'location_event', 'approved_at', 'approved_by',
     ];
 
     protected $casts = [
-        'quotation_date' => 'date', 'event_date' => 'date', 'loading_date' => 'datetime',
+        'quotation_date' => 'date', 'event_date' => 'date', 'event_end_date' => 'date', 'loading_date' => 'datetime',
         'bongkaran_date' => 'datetime', 'approved_at' => 'datetime',
         'converted_to_invoice' => 'boolean', 'discount_percent' => 'decimal:2',
         'tax_percent' => 'decimal:2',
@@ -68,6 +68,11 @@ class Quotation extends Model
     public function items(): HasMany
     {
         return $this->hasMany(QuotationItem::class);
+    }
+
+    public function locations(): HasMany
+    {
+        return $this->hasMany(QuotationLocation::class)->orderBy('sort_order')->orderBy('id');
     }
 
     public function invoice(): HasOne

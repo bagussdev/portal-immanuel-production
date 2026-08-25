@@ -37,30 +37,7 @@
 
             <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr),380px]">
                 <x-responsive-disclosure kicker="Rincian" title="Rincian pekerjaan" description="{{ $quotation->items->count() }} item quotation" :mobile-open="true" content-class="p-0">
-                    <div class="ip-table-wrap">
-                        <table class="ip-table min-w-[680px]">
-                            <thead><tr><th>Item</th><th>Qty</th><th>Panjang</th><th class="text-right">Harga / total</th></tr></thead>
-                            <tbody>
-                                @forelse ($quotation->items as $item)
-                                    <tr>
-                                        <td class="font-bold text-slate-900 dark:text-white">{{ $item->item_name }}</td>
-                                        <td>{{ (float) $item->qty > 0 ? (float) $item->qty : '' }}</td>
-                                        <td>{{ filled($item->length) && (float) $item->length > 0 ? (float) $item->length : '' }}</td>
-                                        @if ($item->price_group)
-                                            @if (! isset($renderedPriceGroups[$item->price_group]))
-                                                @php($renderedPriceGroups[$item->price_group] = true)
-                                                <td rowspan="{{ $priceGroupCounts[$item->price_group] }}" class="border-l border-sky-100 text-right align-middle font-extrabold text-slate-900 dark:border-white/10 dark:text-white">{{ $rupiahOrBlank($item->total) }}</td>
-                                            @endif
-                                        @else
-                                            <td class="text-right font-extrabold text-slate-900 dark:text-white">{{ $rupiahOrBlank($item->total) }}</td>
-                                        @endif
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="4" class="py-12 text-center text-slate-500">Belum ada item quotation.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                    @include('documents._location-items', ['document' => $quotation])
                     @if ($quotation->description)
                         <div class="m-5 rounded-xl bg-sky-50 p-4 dark:bg-white/[.04]"><p class="text-xs font-extrabold uppercase tracking-wide text-slate-400">Catatan</p><p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-300">{{ $quotation->description }}</p></div>
                     @endif

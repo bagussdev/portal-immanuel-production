@@ -49,6 +49,11 @@ class FieldJob extends Model
         return $this->hasMany(FieldJobStage::class);
     }
 
+    public function sites(): HasMany
+    {
+        return $this->hasMany(FieldJobSite::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     public function activeStages(): HasMany
     {
         return $this->stages()->where('is_active', true);

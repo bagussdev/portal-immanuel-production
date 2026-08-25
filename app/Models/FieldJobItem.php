@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class FieldJobItem extends Model
 {
     protected $fillable = [
-        'field_job_id', 'invoice_item_id', 'item_name', 'qty', 'length', 'work_flow',
+        'field_job_id', 'field_job_site_id', 'invoice_item_id', 'item_name', 'qty', 'length', 'work_flow',
     ];
 
     protected $casts = [
@@ -19,5 +19,10 @@ class FieldJobItem extends Model
     public function fieldJob(): BelongsTo
     {
         return $this->belongsTo(FieldJob::class);
+    }
+
+    public function site(): BelongsTo
+    {
+        return $this->belongsTo(FieldJobSite::class, 'field_job_site_id');
     }
 }

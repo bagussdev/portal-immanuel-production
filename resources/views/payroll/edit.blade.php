@@ -2,7 +2,6 @@
     <x-dashboard.sidebar>
         <x-alert-information />
 
-        {{-- BACK --}}
         <div class="mb-6">
             <a href="{{ route('payroll.index', ['month' => $payroll->month, 'year' => $payroll->year]) }}"
                 onclick="showFullScreenLoader();"
@@ -16,7 +15,6 @@
         </div>
 
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            {{-- Heading --}}
             <div class="mb-4">
                 <h2 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">Edit Payroll</h2>
                 <div class="text-sm text-gray-500">
@@ -35,7 +33,6 @@
                 <input type="hidden" name="year" value="{{ $payroll->year }}">
                 <input type="hidden" name="user_id" value="{{ $payroll->user_id }}">
 
-                {{-- ==================== 1) EMPLOYEE ==================== --}}
                 <div class="mb-5">
                     <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Employee</label>
                     <select disabled
@@ -47,7 +44,6 @@
                     </select>
                 </div>
 
-                {{-- ==================== 2) BASE (multi-row) ==================== --}}
                 <div class="mb-6">
                     <div class="flex items-center justify-between mb-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Base</label>
@@ -58,7 +54,6 @@
                     </div>
 
                     <div id="baseList" class="space-y-2 w-full"></div>
-                    {{-- penampung id base yang dihapus --}}
                     <div id="baseDeleteBin"></div>
 
                     @error('bases')
@@ -66,7 +61,6 @@
                     @enderror
                 </div>
 
-                {{-- ==================== 3) DEDUCTION (tetap) ==================== --}}
                 <div class="mb-6">
                     <div class="flex items-center justify-between mb-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Deduction</label>
@@ -84,7 +78,6 @@
                     @enderror
                 </div>
 
-                {{-- ==================== 4) SUMMARY CARD ==================== --}}
                 <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div class="p-3 rounded border dark:border-gray-700">
                         <div class="text-gray-500 text-xs">Base</div>
@@ -100,21 +93,18 @@
                     </div>
                 </div>
 
-                {{-- ==================== 5) NOTES ==================== --}}
                 <div class="mb-6">
                     <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Notes</label>
                     <textarea name="notes" rows="3"
                         class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">{{ old('notes', $payroll->notes) }}</textarea>
                 </div>
 
-                {{-- ==================== 6) APPLY ==================== --}}
                 <div class="flex gap-2">
                     <x-action-button type="submit" text="Update" color="blue" />
                 </div>
             </form>
         </div>
 
-        {{-- Template baris Base --}}
         <template id="tplBaseRow">
             <div class="base-row flex flex-nowrap items-center gap-2 border rounded-md p-2 dark:border-gray-700 w-full">
                 <input type="hidden" name="bases[id][]">
@@ -132,7 +122,6 @@
             </div>
         </template>
 
-        {{-- Template baris Deduction (tetap) --}}
         <template id="tplDedRow">
             <div class="ded-row flex flex-nowrap items-center gap-2 border rounded-md p-2 dark:border-gray-700 w-full">
                 <input type="hidden" name="deductions[id][]">
@@ -150,7 +139,6 @@
             </div>
         </template>
 
-        {{-- Scripts: format rupiah + live summary + load existing --}}
         <script>
             (function() {
                 const q = s => document.querySelector(s);
@@ -163,7 +151,6 @@
                     });
                 };
 
-                // buang pecahan di ujung (",00"/".50"), lalu sisakan digit
                 const unformatRp = (s) => {
                     if (!s) return 0;
                     s = String(s).trim();
@@ -264,14 +251,11 @@
                     computeSummary();
                 }
 
-                // Init base formatter
                 qa('.rp').forEach(bindRpInput);
 
-                // Tambah baris baru
                 q('#btnAddBase')?.addEventListener('click', () => addBaseRow());
                 q('#btnAddDed')?.addEventListener('click', () => addDedRow());
 
-                // Restore OLD atau load existing dari server
                 @php
                     $oldBaseIds = old('bases.id', []);
                     $oldBaseNames = old('bases.name', []);

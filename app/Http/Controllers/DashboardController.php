@@ -11,6 +11,7 @@ use App\Models\Payroll;
 use App\Models\PayrollPeriod;
 use App\Models\Quotation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
@@ -18,11 +19,15 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $canFinance = $user->isMaster() || $user->isAdmin();
-        $currentPeriod = PayrollPeriod::forMonthYear((int) now()->month, (int) now()->year)->first();
+        $selectedMonth = $this->selectedMonth($request);
+        $periodStart = $selectedMonth->copy()->startOfMonth();
+        $periodEnd = $selectedMonth->copy()->endOfMonth();
+        $currentPeriod = PayrollPeriod::forMonthYear((int) $selectedMonth->month, (int) $selectedMonth->year)->first();
 
         $data = [
             'canFinance' => $canFinance,
             'currentPeriod' => $currentPeriod,
+            'selectedMonth' => $selectedMonth,
             'ownPayrolls' => Payroll::with('period')->where('user_id', $user->id)->latest()->limit(6)->get(),
             'payrollStats' => $currentPeriod ? [
                 'total' => $currentPeriod->payrolls()->count(),
@@ -34,7 +39,7 @@ class DashboardController extends Controller
                     ->where('is_active', true)
                     ->where('status', '!=', FieldJobStage::STATUS_COMPLETED)
                     ->whereNotNull('scheduled_at')
-                    ->where('scheduled_at', '>=', today()->startOfDay())
+                    ->whereBetween('scheduled_at', [$periodStart, $periodEnd])
                     ->whereHas('fieldJob', fn ($jobs) => $jobs
                         ->visibleTo($user)
                         ->where('status', '!=', FieldJob::STATUS_CANCELLED))
@@ -46,12 +51,15 @@ class DashboardController extends Controller
         ];
 
         if ($canFinance) {
+            $monthlyInvoices = Invoice::query()->whereNotIn('status', [Invoice::STATUS_DRAFT, Invoice::STATUS_VOID])
+                ->whereBetween('issue_date', [$periodStart->toDateString(), $periodEnd->toDateString()]);
             $data += [
                 'invoiceStats' => [
-                    'open' => Invoice::open()->count(),
-                    'receivable' => (int) Invoice::open()->sum('balance_due'),
-                    'paidThisMonth' => (int) InvoicePayment::whereNull('voided_at')->whereBetween('paid_at', [now()->startOfMonth(), now()->endOfMonth()])->sum('amount'),
-                    'draftQuotations' => Quotation::where('status', Quotation::STATUS_DRAFT)->count(),
+                    'open' => (clone $monthlyInvoices)->where(fn ($query) => $query->whereIn('status', [Invoice::STATUS_UNPAID, Invoice::STATUS_PARTIAL, Invoice::STATUS_OVERDUE])->orWhere(fn ($overpaid) => $overpaid->where('status', Invoice::STATUS_OVERPAID)->whereNull('resolved_at')))->count(),
+                    'totalInvoice' => (int) (clone $monthlyInvoices)->sum('grand_total'),
+                    'receivable' => (int) (clone $monthlyInvoices)->sum('balance_due'),
+                    'paidThisMonth' => (int) InvoicePayment::whereNull('voided_at')->whereBetween('paid_at', [$periodStart, $periodEnd])->sum('amount'),
+                    'draftQuotations' => Quotation::where('status', Quotation::STATUS_DRAFT)->whereBetween('quotation_date', [$periodStart->toDateString(), $periodEnd->toDateString()])->count(),
                 ],
                 'documentStats' => [
                     'overdue' => Armada::whereDate('stnk_expired', '<', today())->count(),
@@ -67,10 +75,20 @@ class DashboardController extends Controller
     {
         abort_unless($request->user()->isMaster() || $request->user()->isAdmin(), 403);
 
+        $month = $this->selectedMonth($request);
+        $invoices = Invoice::query()->whereNotIn('status', [Invoice::STATUS_DRAFT, Invoice::STATUS_VOID])->whereBetween('issue_date', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()]);
         return response()->json([
-            'open_invoices' => Invoice::open()->count(),
-            'receivable' => (int) Invoice::open()->sum('balance_due'),
+            'open_invoices' => (clone $invoices)->where('balance_due', '>', 0)->count(),
+            'receivable' => (int) (clone $invoices)->sum('balance_due'),
             'stnk_due' => Armada::whereDate('stnk_expired', '<=', today()->addDays(30))->count(),
         ]);
+    }
+
+    private function selectedMonth(Request $request): Carbon
+    {
+        $value = (string) $request->input('month', now()->format('Y-m'));
+        if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $value)) $value = now()->format('Y-m');
+
+        return Carbon::createFromFormat('Y-m', $value)->startOfMonth();
     }
 }

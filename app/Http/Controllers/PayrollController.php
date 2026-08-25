@@ -19,26 +19,19 @@ class PayrollController extends Controller
 {
     use AuthorizesRequests;
 
-    /* =========================================================
-     | Helpers
-     * ========================================================*/
 
-    /** Bersihkan input currency ke integer Rupiah (tanpa desimal). */
     private function cleanCurrency($value): int
     {
         if ($value === null || $value === '') {
             return 0;
         }
         $s = trim((string) $value);
-        // buang pecahan di ujung (",00" atau ".50")
         $s = preg_replace('/([.,]\d{1,2})\s*$/', '', $s);
-        // sisakan digit saja
         $s = preg_replace('/[^\d]/', '', $s);
 
         return (int) ($s === '' ? 0 : $s);
     }
 
-    /** True jika (month,year) lebih kecil dari bulan berjalan. */
     private function isPastPeriod(int $month, int $year): bool
     {
         $nowY = (int) now()->year;
@@ -47,15 +40,11 @@ class PayrollController extends Controller
         return ($year < $nowY) || ($year === $nowY && $month < $nowM);
     }
 
-    /** True jika (month,year) sama dengan bulan berjalan. */
     private function isCurrentPeriod(int $month, int $year): bool
     {
         return ((int) now()->month === $month) && ((int) now()->year === $year);
     }
 
-    /* =========================================================
-     | INDEX
-     * ========================================================*/
     public function index(Request $request)
     {
         $this->authorize('payrollmenu');
@@ -73,7 +62,6 @@ class PayrollController extends Controller
 
         $period = PayrollPeriod::forMonthYear($month, $year)->first();
 
-        // ===== TABEL
         if ($period) {
             $q = Payroll::query()
                 ->with('user')
@@ -99,7 +87,6 @@ class PayrollController extends Controller
             ]);
         }
 
-        // ===== STATS periode
         if ($period) {
             $baseQ = Payroll::where('payroll_period_id', $period->id);
             if ($isCrew) {
@@ -126,7 +113,6 @@ class PayrollController extends Controller
             $stats = ['total' => 0, 'draft' => 0, 'paid' => 0, 'base' => 0, 'ded' => 0, 'net' => 0];
         }
 
-        // ===== LOCKS
         $isPast = $this->isPastPeriod($month, $year);
         $isCurrent = $this->isCurrentPeriod($month, $year);
 
@@ -157,7 +143,6 @@ class PayrollController extends Controller
             ];
         }
 
-        // ===== seed latestTs untuk polling
         if ($period) {
             $rawLatest = Payroll::where('payroll_period_id', $period->id)
                 ->select(DB::raw('GREATEST(MAX(updated_at), MAX(created_at)) as ts'))
@@ -180,9 +165,6 @@ class PayrollController extends Controller
         ))->with('isCrew', $isCrew);
     }
 
-    /* =========================================================
-     | PERIOD ACTIONS
-     * ========================================================*/
 
     public function openPeriod(Request $request)
     {
@@ -265,9 +247,6 @@ class PayrollController extends Controller
         ])->with('success', 'Periode dibuka kembali (REOPEN).');
     }
 
-    /* =========================================================
-     | SLIP-LEVEL actions
-     * ========================================================*/
 
     public function pay(Payroll $payroll, Request $r)
     {
@@ -288,15 +267,32 @@ class PayrollController extends Controller
         ])->with('success', 'Slip ditandai PAID.');
     }
 
-    /* =========================================================
-     | SHOW & PDF (TETAP seperti sebelumnya)
-     * ========================================================*/
+    public function payAll(PayrollPeriod $period, Request $request)
+    {
+        $this->authorize('paypayroll');
+        if (! in_array($period->status, [PayrollPeriod::STATUS_OPEN, PayrollPeriod::STATUS_REOPEN], true)) {
+            return back()->with('error', 'Semua slip hanya dapat dibayar saat periode dibuka.');
+        }
+
+        $count = DB::transaction(function () use ($period) {
+            $drafts = Payroll::query()->where('payroll_period_id', $period->id)
+                ->where('status', Payroll::STATUS_DRAFT)->lockForUpdate()->get();
+            foreach ($drafts as $payroll) $payroll->markPaid((int) Auth::id());
+
+            return $drafts->count();
+        });
+
+        return redirect()->route('payroll.index', [
+            'month' => (int) ($request->input('month') ?: $period->month),
+            'year' => (int) ($request->input('year') ?: $period->year),
+        ])->with('success', $count.' slip berhasil ditandai dibayar.');
+    }
+
 
     public function show(Request $r, Payroll $payroll)
     {
         $this->authorize('payrollmenu');
 
-        // Crew hanya boleh lihat slip miliknya
         if (
             ! $r->user()->canViewAllPayrolls()
             && (int) $payroll->user_id !== (int) $r->user()->id
@@ -306,7 +302,6 @@ class PayrollController extends Controller
 
         $payroll->load('user', 'period');
 
-        // === Base: sekarang list
         $baseItems = $payroll->items()->where('type', 'base')->orderBy('id')->get();
         $deductionItems = $payroll->items()->where('type', 'deduction')->orderBy('id')->get();
 
@@ -358,9 +353,6 @@ class PayrollController extends Controller
         return $pdf->stream($filename);
     }
 
-    /* =========================================================
-     | CREATE / STORE  (DIUBAH: Base multi-row)
-     * ========================================================*/
 
     public function create(Request $request)
     {
@@ -391,12 +383,10 @@ class PayrollController extends Controller
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'user_id' => ['required', Rule::exists('users', 'id')],
 
-            // Base -> array
             'bases' => ['required', 'array'],
             'bases.name.*' => ['nullable', 'string', 'max:100'],
             'bases.amount.*' => ['nullable', 'regex:/^\s*[\d.,\sRpRP]+\s*$/'],
 
-            // Deductions -> tetap
             'deductions' => ['sometimes', 'array'],
             'deductions.name.*' => ['nullable', 'string', 'max:100'],
             'deductions.amount.*' => ['nullable', 'regex:/^\s*[\d.,\sRpRP]+\s*$/'],
@@ -410,7 +400,6 @@ class PayrollController extends Controller
                 ->with('error', 'Period belum aktif (Open/Reopen dulu).');
         }
 
-        // Cegah duplikasi slip user di periode yang sama
         $exists = Payroll::where('payroll_period_id', $period->id)
             ->where('user_id', $data['user_id'])
             ->exists();
@@ -418,7 +407,6 @@ class PayrollController extends Controller
             return back()->withInput()->withErrors(['user_id' => 'User sudah memiliki payroll pada periode ini.']);
         }
 
-        // Wajib minimal satu base > 0
         $baseNames = $data['bases']['name'] ?? [];
         $baseAmts = $data['bases']['amount'] ?? [];
         $hasBase = false;
@@ -440,7 +428,6 @@ class PayrollController extends Controller
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            // BASES (multi)
             foreach ($baseNames as $i => $nm) {
                 $nm = trim((string) ($nm ?? ''));
                 $val = max(0, $this->cleanCurrency($baseAmts[$i] ?? null));
@@ -453,7 +440,6 @@ class PayrollController extends Controller
                 }
             }
 
-            // DEDUCTIONS (tetap)
             $names = $data['deductions']['name'] ?? [];
             $amts = $data['deductions']['amount'] ?? [];
             foreach ($names as $i => $nm) {
@@ -475,9 +461,6 @@ class PayrollController extends Controller
             ->with('success', 'Payroll berhasil dibuat.');
     }
 
-    /* =========================================================
-     | EDIT / UPDATE (DIUBAH: Base multi-row)
-     * ========================================================*/
 
     public function edit(Request $r, Payroll $payroll)
     {
@@ -487,14 +470,13 @@ class PayrollController extends Controller
         }
         $users = User::select('id', 'name')->orderBy('name')->get();
 
-        // base jadi list
         $baseItems = $payroll->items()->where('type', 'base')->orderBy('id')->get();
         $deductionItems = $payroll->items()->where('type', 'deduction')->orderBy('id')->get();
 
         return view('payroll.edit', [
             'payroll' => $payroll,
             'users' => $users,
-            'baseItems' => $baseItems,      // ganti dari baseItem tunggal
+            'baseItems' => $baseItems,
             'deductionItems' => $deductionItems,
             'month' => $r->integer('month') ?: $payroll->month,
             'year' => $r->integer('year') ?: $payroll->year,
@@ -510,13 +492,11 @@ class PayrollController extends Controller
         $r->validate([
             'user_id' => ['required', 'exists:users,id'],
 
-            // base arrays
             'bases.id.*' => ['nullable', 'integer'],
             'bases.name.*' => ['nullable', 'string', 'max:100'],
             'bases.amount.*' => ['nullable', 'regex:/^\s*[\d.,\sRpRP]+\s*$/'],
             'bases_delete.*' => ['nullable', 'integer'],
 
-            // deductions (tetap)
             'deductions.name.*' => ['nullable', 'string', 'max:100'],
             'deductions.amount.*' => ['nullable', 'regex:/^\s*[\d.,\sRpRP]+\s*$/'],
             'deductions.id.*' => ['nullable', 'integer'],
@@ -526,16 +506,13 @@ class PayrollController extends Controller
         ]);
 
         DB::transaction(function () use ($r, $payroll) {
-            // header
             $payroll->update(['notes' => $r->input('notes')]);
 
-            // === BASE: delete
             $delBaseIds = (array) $r->input('bases_delete', []);
             if (! empty($delBaseIds)) {
                 $payroll->items()->whereIn('id', $delBaseIds)->where('type', 'base')->delete();
             }
 
-            // === BASE: upsert
             $bIds = (array) $r->input('bases.id', []);
             $bNames = (array) $r->input('bases.name', []);
             $bAmts = (array) $r->input('bases.amount', []);
@@ -566,18 +543,15 @@ class PayrollController extends Controller
                 }
             }
 
-            // Pastikan minimal ada satu base > 0
             if (! $hasBase) {
                 abort(422, 'Minimal satu komponen Base dengan nominal > 0.');
             }
 
-            // === DEDUCTIONS: delete
             $delIds = (array) $r->input('deductions_delete', []);
             if (! empty($delIds)) {
                 $payroll->items()->whereIn('id', $delIds)->where('type', 'deduction')->delete();
             }
 
-            // === DEDUCTIONS: upsert
             $ids = (array) $r->input('deductions.id', []);
             $names = (array) $r->input('deductions.name', []);
             $amts = (array) $r->input('deductions.amount', []);
@@ -613,9 +587,6 @@ class PayrollController extends Controller
         ])->with('success', 'Payroll updated.');
     }
 
-    /* =========================================================
-     | POLLING (delta) – TETAP
-     * ========================================================*/
 
     protected function buildBaseQuery(Request $request)
     {

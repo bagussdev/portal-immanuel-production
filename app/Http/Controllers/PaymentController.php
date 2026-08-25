@@ -15,7 +15,6 @@ class PaymentController extends Controller
     public function index(Request $request)
     {
         $this->authorize('paymentsmenu');
-        // ====== Params dasar ======
         $mode = $request->string('mode')->lower()->value() ?: 'monthly'; // 'monthly' | 'weekly'
         $month = $request->input('month', now()->format('Y-m'));
         $weekStart = $request->input('week_start', now()->startOfWeek(Carbon::MONDAY)->toDateString());
@@ -24,7 +23,6 @@ class PaymentController extends Controller
         $perPageRaw = $request->input('per_page', '5');
         $sortRaw = $request->input('sort', 'paid_at:desc'); // kolom:arah
 
-        // ====== Range waktu ======
         if ($mode === 'weekly') {
             $start = Carbon::parse($weekStart)->startOfDay();
             $end = (clone $start)->addDays(6)->endOfDay();
@@ -35,7 +33,6 @@ class PaymentController extends Controller
             $periodLabel = $start->translatedFormat('F Y');
         }
 
-        // ====== Sort parser ======
         $sortKey = 'paid_at';
         $sortDir = 'desc';
         if (is_string($sortRaw) && str_contains($sortRaw, ':')) {
@@ -50,7 +47,6 @@ class PaymentController extends Controller
             }
         }
 
-        // ====== Base query (JOIN untuk ambil meta) ======
         $q = DB::table('invoice_payments as p')
             ->leftJoin('invoices as i', 'i.id', '=', 'p.invoice_id')
             ->leftJoin('clients as c', 'c.id', '=', 'i.client_id')
@@ -59,7 +55,6 @@ class PaymentController extends Controller
             ->whereBetween('p.paid_at', [$start, $end]);
 
         if ($exactDate) {
-            // override: hanya tanggal tertentu
             $q->whereDate('p.paid_at', '=', $exactDate);
         }
 
@@ -73,7 +68,6 @@ class PaymentController extends Controller
             });
         }
 
-        // ====== Clones untuk summary (tanpa pagination) ======
         $sumQ = clone $q;
         $countQ = clone $q;
         $avgQ = clone $q;
@@ -99,8 +93,6 @@ class PaymentController extends Controller
             'client_name' => $maxPayment->client_name,
         ] : [];
 
-        // ====== Sorting kolom terhitung ======
-        // mapping kolom sort → ekspresi/order
         $sortMap = [
             'invoice_number' => 'i.invoice_number',
             'paid_at' => 'p.paid_at',
@@ -111,7 +103,6 @@ class PaymentController extends Controller
         $orderCol = $sortMap[$sortKey] ?? 'p.paid_at';
         $q->orderBy($orderCol, $sortDir)->orderBy('p.id', 'desc');
 
-        // ====== Per page ======
         $showPagination = true;
         if ($perPageRaw === 'all') {
             $itemsRows = $q->select([
@@ -143,7 +134,6 @@ class PaymentController extends Controller
             ])->paginate($perPage)->withQueryString();
         }
 
-        // ====== Map rows → array untuk view ======
         $mapRow = function ($r) {
             $paidAtHuman = $r->paid_at ? Carbon::parse($r->paid_at)->translatedFormat('d M Y') : '';
 
@@ -165,7 +155,6 @@ class PaymentController extends Controller
 
         if ($showPagination) {
             $items = $itemsRows->getCollection()->map($mapRow)->values();
-            // bungkus lagi ke paginator supaya komponenmu bisa panggil ->links()
             $items = new LengthAwarePaginator(
                 $items,
                 $itemsRows->total(),

@@ -6,7 +6,6 @@
             class="mb-4 sm:mt-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 text-xl font-bold text-gray-800 dark:text-white">
             <div>Equipment Management</div>
 
-            {{-- Search and Add --}}
             <div class="flex flex-row gap-2 sm:gap-3 items-start sm:items-center text-sm">
                 <form method="GET" action="{{ route('equipment.index') }}" class="flex gap-2 items-center"
                     onsubmit="showFullScreenLoader();">
@@ -31,7 +30,6 @@
 
         <hr class="h-[3px] my-8 bg-gray-200 border-0 dark:bg-gray-700 w-full">
 
-        {{-- Table --}}
         <div class="w-full overflow-x-auto">
             <div class="min-w-full inline-block align-middle">
                 <div class="overflow-hidden shadow rounded-lg" id="equipmentList" data-list>
@@ -132,7 +130,6 @@
             </div>
         </div>
 
-        {{-- Polling footer --}}
         <div id="pollFooter"
             class="mt-2 mb-4 flex items-center justify-between text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 px-4">
             <span class="inline-flex items-center">
@@ -147,7 +144,6 @@
         @push('scripts')
             <script>
                 document.addEventListener("DOMContentLoaded", function() {
-                    // ===== Init List.js =====
                     const list = new List('equipmentList', {
                         valueNames: ['no', 'name', 'brand', 'serial', 'qty', 'createdby', 'status', 'location',
                             'model'
@@ -206,11 +202,9 @@
                         });
                     });
 
-                    // ===== Polling delta per-row =====
                     const tbody = document.getElementById('equipBody');
                     if (!tbody) return;
 
-                    // footer UI
                     const pollDot = document.getElementById('pollDot');
                     const pollLbl = document.getElementById('pollLabel');
                     const lastLbl = document.getElementById('lastUpdatedAt');
@@ -281,7 +275,6 @@
                             const u = new URL(changesUrl, window.location.origin);
                             u.searchParams.set('since', lastTs);
 
-                            // KIRIM daftar ID yang sedang terlihat → backend bisa hitung "deleted" untuk hard delete
                             tbody.querySelectorAll('tr[data-id]').forEach(tr => {
                                 u.searchParams.append('visible[]', tr.getAttribute('data-id'));
                             });
@@ -302,7 +295,6 @@
                             } = j || {};
                             let changed = false;
 
-                            // deleted: hapus baris yang hilang di DB
                             if (deleted.length) {
                                 deleted.forEach(id => {
                                     const row = tbody.querySelector(`tr[data-id="${id}"]`);
@@ -311,7 +303,6 @@
                                 changed = true;
                             }
 
-                            // created + updated → ambil partial rows (HTML)
                             const need = [...new Set([...updated, ...created])];
                             if (need.length) {
                                 const ru = new URL(rowsUrl, window.location.origin);
@@ -362,7 +353,6 @@
                         }
                     }
 
-                    // Resume cepat saat tab kembali aktif
                     document.addEventListener('visibilitychange', () => {
                         if (!document.hidden) {
                             console.debug('[Equipment] Tab visible → resume now');
@@ -372,7 +362,6 @@
                         }
                     });
 
-                    // Instant highlight ketika balik dari create (?highlight=ID)
                     async function tryInstantHighlight() {
                         const params = new URLSearchParams(location.search);
                         const highlightId = params.get('highlight');
@@ -402,7 +391,6 @@
                         }
                     }
 
-                    // Start
                     updateLastUpdated();
                     tryInstantHighlight();
                     schedule(baseInterval, 'init');

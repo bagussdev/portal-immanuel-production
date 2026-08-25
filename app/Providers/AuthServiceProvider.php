@@ -14,6 +14,7 @@ class AuthServiceProvider extends ServiceProvider
         'invoicemenu', 'createinvoice', 'editinvoice', 'deleteinvoice', 'issueinvoice',
         'adddp', 'voidpayment', 'voidinvoice', 'paymentsmenu',
         'expensesmenu', 'createexpenses', 'editexpenses', 'deleteexpenses', 'manageexpenses',
+        'exportuserdata',
     ];
 
     protected $policies = [];
