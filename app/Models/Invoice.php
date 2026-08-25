@@ -170,6 +170,21 @@ class Invoice extends Model
         };
     }
 
+    public function pdfFilename(): string
+    {
+        $clientName = Str::of($this->client?->name ?: 'Client')
+            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->limit(70, '')->value();
+        $location = Str::of($this->location_event ?: '')
+            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->limit(80, '')->value();
+        $locationPart = $location !== '' ? " di {$location}" : '';
+        $documentCode = $this->invoice_number
+            ? Str::afterLast($this->invoice_number, '/')
+            : 'INV-DRAFT-'.$this->id;
+        $documentDate = ($this->issue_date ?: $this->created_at ?: now())->format('d-m-Y');
+
+        return "Invoice {$clientName}{$locationPart} {$documentCode} {$documentDate}.pdf";
+    }
+
     public function scopeOpen($query)
     {
         return $query->where(function ($query) {

@@ -7,13 +7,12 @@ use App\Models\Client;
 use App\Models\Quotation;
 use App\Services\ApproveQuotation;
 use App\Services\AuditTrail;
-use App\Services\DocumentTotals;
 use App\Services\DocumentLocations;
+use App\Services\DocumentTotals;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class QuotationController extends Controller
 {
@@ -25,6 +24,20 @@ class QuotationController extends Controller
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
         $history = $request->boolean('history');
+        $sort = (string) $request->input('sort');
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
+        $sorts = [
+            'number' => 'quotation_number',
+            'client' => Client::select('name')->whereColumn('clients.id', 'quotations.client_id'),
+            'event' => 'event_name',
+            'document_date' => 'quotation_date',
+            'event_date' => 'event_date',
+            'status' => 'status',
+            'total' => 'grand_total',
+        ];
+        if (! array_key_exists($sort, $sorts)) {
+            $sort = '';
+        }
         $quotations = Quotation::with(['client', 'user', 'invoice'])
             ->when($search, fn ($q) => $q->where(fn ($qq) => $qq
                 ->where('quotation_number', 'like', "%{$search}%")
@@ -33,10 +46,13 @@ class QuotationController extends Controller
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when(! $status && $history, fn ($q) => $q->whereIn('status', [Quotation::STATUS_APPROVED, Quotation::STATUS_REJECTED, Quotation::STATUS_CANCELLED]))
             ->when(! $status && ! $history, fn ($q) => $q->whereIn('status', [Quotation::STATUS_DRAFT, Quotation::STATUS_SENT]))
-            ->latest()->paginate(min(max((int) $request->input('per_page', 10), 5), 100))
+            ->when($sort, fn ($query) => $query->orderBy($sorts[$sort], $direction))
+            ->when(! $sort, fn ($query) => $query->latest())
+            ->orderByDesc('id')
+            ->paginate(min(max((int) $request->input('per_page', 10), 5), 100))
             ->withQueryString();
 
-        return view('quotations.index', compact('quotations', 'search', 'status', 'history'));
+        return view('quotations.index', compact('quotations', 'search', 'status', 'history', 'sort', 'direction'));
     }
 
     public function changes(Request $request)
@@ -161,21 +177,14 @@ class QuotationController extends Controller
         return redirect()->route('quotations.index')->with('success', 'Quotation dipindahkan ke arsip.');
     }
 
-    public function exportPdf(Quotation $quotation)
+    public function exportPdf(Request $request, Quotation $quotation, ?string $filename = null)
     {
         $this->authorize('quotationmenu');
         $quotation->load(['client', 'bankDetail', 'locations.items', 'items']);
-        $clientName = Str::of($quotation->client?->name ?: 'Client')
-            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->value();
-        $location = Str::of($quotation->location_event ?: '')
-            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->value();
-        $locationPart = $location !== '' ? " di {$location}" : '';
-        $documentCode = Str::afterLast((string) $quotation->quotation_number, '/') ?: 'QTN'.$quotation->id;
-        $documentDate = ($quotation->quotation_date ?: $quotation->created_at ?: now())->format('d-m-Y');
-        $filename = "Quotation {$clientName}{$locationPart} {$documentCode} {$documentDate}.pdf";
+        $filename = $quotation->pdfFilename();
+        $pdf = Pdf::loadView('quotations.pdf', compact('quotation'));
 
-        return Pdf::loadView('quotations.pdf', compact('quotation'))
-            ->stream($filename);
+        return $request->boolean('download') ? $pdf->download($filename) : $pdf->stream($filename);
     }
 
     private function validated(Request $request): array
@@ -237,6 +246,7 @@ class QuotationController extends Controller
     private function header(array $data, array $summary, int $clientId): array
     {
         $first = DocumentLocations::normalize($data)[0];
+
         return [
             'client_id' => $clientId, 'bank_detail_id' => $data['bank_detail_id'] ?? null,
             'event_name' => $data['event_name'] ?? null,

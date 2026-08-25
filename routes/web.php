@@ -45,7 +45,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('quotations/rows', [QuotationController::class, 'rows'])->name('quotations.rows');
     Route::get('quotations/sync/changes', [QuotationController::class, 'changes'])->name('quotations.sync.changes');
-    Route::get('quotations/{quotation}/pdf', [QuotationController::class, 'exportPdf'])->name('quotations.export.pdf');
+    Route::get('quotations/{quotation}/pdf/{filename?}', [QuotationController::class, 'exportPdf'])->name('quotations.export.pdf');
     Route::post('quotations/{quotation}/approve', [QuotationController::class, 'approve'])->name('quotations.acc');
     Route::post('quotations/{quotation}/cancel', [QuotationController::class, 'cancel'])->name('quotations.cancel');
     Route::resource('quotations', QuotationController::class);
@@ -57,7 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::post('invoices/{invoice}/complete', [InvoiceController::class, 'complete'])->name('invoices.complete');
     Route::patch('invoices/{invoice}/payments/{payment}/void', [InvoiceController::class, 'voidPayment'])->name('invoices.payments.void');
     Route::get('invoices/{invoice}/payments/{payment}/attachment', [InvoiceController::class, 'paymentAttachment'])->name('invoices.payments.attachment');
-    Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'exportPdf'])->name('invoices.export.pdf');
+    Route::get('invoices/{invoice}/pdf/{filename?}', [InvoiceController::class, 'exportPdf'])->name('invoices.export.pdf');
     Route::patch('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
     Route::resource('invoices', InvoiceController::class);
 

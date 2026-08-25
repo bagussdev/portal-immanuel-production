@@ -16,10 +16,15 @@
                         <p class="text-[11px] font-extrabold uppercase tracking-[.22em] text-sky-200 dark:text-red-400">Detail quotation</p>
                         <h1 class="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{{ $quotation->quotation_number }}</h1>
                         <p class="mt-2 text-sm text-sky-100/80 dark:text-slate-400">{{ $quotation->client?->name ?: 'Client belum diisi' }} &middot; {{ $quotation->event_name ?: 'Tanpa nama acara' }}</p>
+                        <div class="mt-3 flex flex-wrap gap-2 text-[11px] font-bold text-white">
+                            <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">Quotation: <x-date-range :start="$quotation->quotation_date ?: $quotation->created_at" class="ml-1" /></span>
+                            <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">Event: <x-date-range :start="$quotation->event_date" :end="$quotation->event_end_date" class="ml-1" /></span>
+                        </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <x-status-badge :status="$quotation->status" />
-                        <a href="{{ route('quotations.export.pdf', $quotation) }}" target="_blank" class="ip-btn border border-white/20 bg-white/10 text-white hover:bg-white/20">Lihat PDF</a>
+                        <a href="{{ route('quotations.export.pdf', [$quotation, $quotation->pdfFilename()]) }}" target="_blank" class="ip-btn border border-white/20 bg-white/10 text-white hover:bg-white/20">Lihat PDF</a>
+                        <a href="{{ route('quotations.export.pdf', [$quotation, $quotation->pdfFilename(), 'download' => 1]) }}" class="ip-btn border border-white/20 bg-white/10 text-white hover:bg-white/20">Unduh PDF</a>
                         @can('editquotation')
                             @if ($quotation->status !== 'approved')
                                 <a href="{{ route('quotations.edit', $quotation) }}" class="ip-btn bg-white text-slate-950 hover:bg-sky-50">Edit quotation</a>
@@ -55,9 +60,10 @@
                     </section>
                     <x-responsive-disclosure kicker="Operasional" title="Jadwal" description="Lokasi, acara, loading, dan bongkar.">
                         <dl class="space-y-3 text-sm">
-                            @foreach (['Lokasi' => $quotation->location_event, 'Acara' => optional($quotation->event_date)->translatedFormat('d F Y'), 'Loading' => optional($quotation->loading_date)->translatedFormat('d F Y H:i'), 'Bongkar' => optional($quotation->bongkaran_date)->translatedFormat('d F Y H:i')] as $label => $value)
-                                <div><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">{{ $label }}</dt><dd class="mt-0.5 font-semibold text-slate-700 dark:text-slate-300">{{ $value ?: '-' }}</dd></div>
-                            @endforeach
+                            <div><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Lokasi</dt><dd class="mt-0.5 font-semibold text-slate-700 dark:text-slate-300">{{ $quotation->location_event ?: '-' }}</dd></div>
+                            <div><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Acara</dt><dd class="mt-0.5 font-semibold text-slate-700 dark:text-slate-300"><x-date-range :start="$quotation->event_date" :end="$quotation->event_end_date" /></dd></div>
+                            <div><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Loading</dt><dd class="mt-0.5 font-semibold text-slate-700 dark:text-slate-300">{{ optional($quotation->loading_date)->translatedFormat('d F Y H:i') ?: '-' }}</dd></div>
+                            <div><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Bongkar</dt><dd class="mt-0.5 font-semibold text-slate-700 dark:text-slate-300">{{ optional($quotation->bongkaran_date)->translatedFormat('d F Y H:i') ?: '-' }}</dd></div>
                         </dl>
                     </x-responsive-disclosure>
                     @include('documents._bank-detail-card', ['bankDetail' => $quotation->bankDetail])

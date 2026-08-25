@@ -24,6 +24,20 @@ class FieldJobController extends Controller
         $search = trim((string) $request->input('search'));
         $status = (string) $request->input('status');
         $history = $request->boolean('history');
+        $sort = (string) $request->input('sort');
+        $direction = $request->input('direction') === 'desc' ? 'desc' : 'asc';
+        $sorts = [
+            'number' => 'job_number',
+            'client' => 'client_name',
+            'event' => 'event_name',
+            'event_date' => 'event_date',
+            'loading_date' => 'loading_date',
+            'teardown_date' => 'teardown_date',
+            'status' => 'status',
+        ];
+        if (! array_key_exists($sort, $sorts)) {
+            $sort = '';
+        }
 
         $jobs = FieldJob::query()
             ->visibleTo($request->user())
@@ -45,13 +59,19 @@ class FieldJobController extends Controller
             ], true), fn ($query) => $query->where('status', $status))
             ->when(! $status && $history, fn ($query) => $query->whereIn('status', [FieldJob::STATUS_COMPLETED, FieldJob::STATUS_CANCELLED]))
             ->when(! $status && ! $history, fn ($query) => $query->whereIn('status', [FieldJob::STATUS_PENDING, FieldJob::STATUS_IN_PROGRESS]))
-            ->orderByRaw('COALESCE(loading_date, event_date) IS NULL')
-            ->orderBy('loading_date')
-            ->latest('id')
+            ->when($sort, fn ($query) => $query
+                ->orderByRaw($sorts[$sort].' IS NULL')
+                ->orderBy($sorts[$sort], $direction))
+            ->when(! $sort && ! $history, fn ($query) => $query
+                ->orderByRaw('COALESCE(loading_date, event_date) IS NULL')
+                ->orderByRaw('COALESCE(loading_date, event_date) ASC'))
+            ->when(! $sort && $history, fn ($query) => $query
+                ->orderByRaw('COALESCE(teardown_date, loading_date, event_date, created_at) DESC'))
+            ->orderByDesc('id')
             ->paginate(min(max((int) $request->input('per_page', 12), 6), 60))
             ->withQueryString();
 
-        return view('field-jobs.index', compact('jobs', 'search', 'status', 'history'));
+        return view('field-jobs.index', compact('jobs', 'search', 'status', 'history', 'sort', 'direction'));
     }
 
     public function history(Request $request): View

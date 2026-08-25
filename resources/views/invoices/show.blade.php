@@ -20,9 +20,11 @@
                         <p class="mt-2 text-sm text-sky-100/80 dark:text-slate-400">
                             {{ $invoice->client?->name ?: 'Client belum diisi' }} &middot; {{ $invoice->event_name ?: 'Tanpa nama acara' }}
                         </p>
-                        <span class="mt-3 inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold text-white">
-                            Tipe event: {{ $invoice->workFlowLabel() }}
-                        </span>
+                        <div class="mt-3 flex flex-wrap gap-2 text-[11px] font-bold text-white">
+                            <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">Invoice: <x-date-range :start="$invoice->issue_date ?: $invoice->created_at" class="ml-1" /></span>
+                            <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">Event: <x-date-range :start="$invoice->event_date" :end="$invoice->event_end_date" class="ml-1" /></span>
+                            <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">{{ $invoice->workFlowLabel() }}</span>
+                        </div>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2">
@@ -30,8 +32,11 @@
                         @can('adddp')@if(in_array($invoice->status,['unpaid','partial','overdue','overpaid']) && !$invoice->resolved_at)<form method="POST" action="{{ route('invoices.complete',$invoice) }}" onsubmit="return confirmAndLoad('Selesaikan invoice dan catat pelunasan sisanya?')">@csrf<input type="hidden" name="paid_at" value="{{ today()->format('Y-m-d') }}"><button class="ip-btn bg-emerald-500 text-white hover:bg-emerald-600">Selesaikan</button></form>@endif @endcan
 
                         @if ($invoice->invoice_number)
-                            <a target="_blank" href="{{ route('invoices.export.pdf', $invoice) }}" class="ip-btn border border-white/20 bg-white/10 text-white hover:bg-white/20">
+                            <a target="_blank" href="{{ route('invoices.export.pdf', [$invoice, $invoice->pdfFilename()]) }}" class="ip-btn border border-white/20 bg-white/10 text-white hover:bg-white/20">
                                 Lihat PDF
+                            </a>
+                            <a href="{{ route('invoices.export.pdf', [$invoice, $invoice->pdfFilename(), 'download' => 1]) }}" class="ip-btn border border-white/20 bg-white/10 text-white hover:bg-white/20">
+                                Unduh PDF
                             </a>
                             @if($invoice->fieldJob)
                                 <a href="{{ route('field-jobs.show', $invoice->fieldJob) }}" class="ip-btn border border-white/20 bg-white/10 text-white hover:bg-white/20">
@@ -109,7 +114,7 @@
                     </dl>
                     <div class="mt-6 space-y-2 border-t border-white/10 pt-5 text-xs text-slate-400">
                         <p><strong class="text-slate-200">Loading:</strong> {{ optional($invoice->loading_date)->translatedFormat('d M Y H:i') ?: '-' }}</p>
-                        <p><strong class="text-slate-200">Acara:</strong> {{ optional($invoice->event_date)->translatedFormat('d M Y') ?: '-' }}</p>
+                        <p><strong class="text-slate-200">Acara:</strong> <x-date-range :start="$invoice->event_date" :end="$invoice->event_end_date" /></p>
                         <p><strong class="text-slate-200">Bongkar:</strong> {{ optional($invoice->bongkaran_date)->translatedFormat('d M Y H:i') ?: '-' }}</p>
                     </div>
                 </aside>

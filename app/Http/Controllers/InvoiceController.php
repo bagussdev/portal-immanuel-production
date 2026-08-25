@@ -7,15 +7,14 @@ use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use App\Services\AuditTrail;
-use App\Services\DocumentTotals;
 use App\Services\DocumentLocations;
+use App\Services\DocumentTotals;
 use App\Services\FieldJobSynchronizer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class InvoiceController extends Controller
 {
@@ -27,6 +26,22 @@ class InvoiceController extends Controller
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
         $history = $request->boolean('history');
+        $sort = (string) $request->input('sort');
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
+        $sorts = [
+            'number' => 'invoice_number',
+            'client' => Client::select('name')->whereColumn('clients.id', 'invoices.client_id'),
+            'event' => 'event_name',
+            'document_date' => 'issue_date',
+            'event_date' => 'event_date',
+            'status' => 'status',
+            'total' => 'grand_total',
+            'paid' => 'total_paid',
+            'balance' => 'balance_due',
+        ];
+        if (! array_key_exists($sort, $sorts)) {
+            $sort = '';
+        }
         $invoices = Invoice::with(['client', 'creator', 'quotation'])
             ->when($search, fn ($q) => $q->where(fn ($qq) => $qq
                 ->where('invoice_number', 'like', "%{$search}%")
@@ -41,10 +56,13 @@ class InvoiceController extends Controller
                 $query->whereIn('status', [Invoice::STATUS_DRAFT, Invoice::STATUS_UNPAID, Invoice::STATUS_PARTIAL, Invoice::STATUS_OVERDUE])
                     ->orWhere(fn ($overpaid) => $overpaid->where('status', Invoice::STATUS_OVERPAID)->whereNull('resolved_at'));
             }))
-            ->latest()->paginate(min(max((int) $request->input('per_page', 10), 5), 100))
+            ->when($sort, fn ($query) => $query->orderBy($sorts[$sort], $direction))
+            ->when(! $sort, fn ($query) => $query->latest())
+            ->orderByDesc('id')
+            ->paginate(min(max((int) $request->input('per_page', 10), 5), 100))
             ->withQueryString();
 
-        return view('invoices.index', compact('invoices', 'search', 'status', 'history'));
+        return view('invoices.index', compact('invoices', 'search', 'status', 'history', 'sort', 'direction'));
     }
 
     public function changes()
@@ -268,23 +286,14 @@ class InvoiceController extends Controller
         return Storage::disk('local')->download($payment->attachment);
     }
 
-    public function exportPdf(Invoice $invoice)
+    public function exportPdf(Request $request, Invoice $invoice, ?string $filename = null)
     {
         $this->authorize('invoicemenu');
         $invoice->load(['client', 'bankDetail', 'locations.items', 'items', 'payments' => fn ($q) => $q->whereNull('voided_at')->orderBy('paid_at')]);
-        $clientName = Str::of($invoice->client?->name ?: 'Client')
-            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->value();
-        $location = Str::of($invoice->location_event ?: '')
-            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->value();
-        $locationPart = $location !== '' ? " di {$location}" : '';
-        $documentCode = $invoice->invoice_number
-            ? Str::afterLast($invoice->invoice_number, '/')
-            : 'INV-DRAFT-'.$invoice->id;
-        $documentDate = ($invoice->issue_date ?: $invoice->created_at ?: now())->format('d-m-Y');
-        $filename = "Invoice {$clientName}{$locationPart} {$documentCode} {$documentDate}.pdf";
+        $filename = $invoice->pdfFilename();
+        $pdf = Pdf::loadView('invoices.pdf', compact('invoice'));
 
-        return Pdf::loadView('invoices.pdf', compact('invoice'))
-            ->stream($filename);
+        return $request->boolean('download') ? $pdf->download($filename) : $pdf->stream($filename);
     }
 
     public function void(Request $request, Invoice $invoice)
@@ -380,6 +389,7 @@ class InvoiceController extends Controller
     private function header(array $data, array $summary, int $clientId): array
     {
         $first = DocumentLocations::normalize($data, Invoice::FLOW_INSTALL_TEARDOWN)[0];
+
         return [
             'client_id' => $clientId, 'bank_detail_id' => $data['bank_detail_id'] ?? null,
             'event_name' => $data['event_name'] ?? null,

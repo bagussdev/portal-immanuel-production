@@ -249,6 +249,8 @@ class BusinessFlowTest extends TestCase
             'Quotation Bapak Widhi di Denpasar '.str($quotation->quotation_number)->afterLast('/').' '.$quotation->quotation_date->format('d-m-Y').'.pdf',
             (string) $quotationPdf->headers->get('content-disposition'),
         );
+        $this->get(route('quotations.export.pdf', [$quotation, $quotation->pdfFilename(), 'download' => 1]))
+            ->assertDownload($quotation->pdfFilename());
         $invoice = app(ApproveQuotation::class)->handle($quotation, $admin->id)->fresh();
         $invoice->update([
             'invoice_number' => 'IMP/08/26/INV0001',
@@ -263,6 +265,8 @@ class BusinessFlowTest extends TestCase
             'Invoice Bapak Widhi di Denpasar INV0001 '.today()->format('d-m-Y').'.pdf',
             (string) $invoicePdf->headers->get('content-disposition'),
         );
+        $this->get(route('invoices.export.pdf', [$invoice, $invoice->pdfFilename(), 'download' => 1]))
+            ->assertDownload($invoice->pdfFilename());
 
         $invoice->update(['location_event' => null]);
         $invoicePdfWithoutLocation = $this->get(route('invoices.export.pdf', $invoice))->assertOk();

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Quotation extends Model
 {
@@ -78,5 +79,18 @@ class Quotation extends Model
     public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class);
+    }
+
+    public function pdfFilename(): string
+    {
+        $clientName = Str::of($this->client?->name ?: 'Client')
+            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->limit(70, '')->value();
+        $location = Str::of($this->location_event ?: '')
+            ->ascii()->replaceMatches('/[^A-Za-z0-9 ._-]+/', ' ')->squish()->limit(80, '')->value();
+        $locationPart = $location !== '' ? " di {$location}" : '';
+        $documentCode = Str::afterLast((string) $this->quotation_number, '/') ?: 'QTN'.$this->id;
+        $documentDate = ($this->quotation_date ?: $this->created_at ?: now())->format('d-m-Y');
+
+        return "Quotation {$clientName}{$locationPart} {$documentCode} {$documentDate}.pdf";
     }
 }

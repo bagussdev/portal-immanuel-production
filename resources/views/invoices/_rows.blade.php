@@ -5,8 +5,10 @@
         </td>
         <td>
             <p class="font-bold text-slate-900 dark:text-white">{{ $invoice->client?->name ?: 'Client manual' }}</p>
-            <p class="mt-0.5 text-xs text-slate-500">{{ $invoice->event_name ?: 'Tanpa nama acara' }}</p>
         </td>
+        <td class="max-w-[220px]"><p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-300" title="{{ $invoice->event_name }}">{{ $invoice->event_name ?: '-' }}</p></td>
+        <td class="whitespace-nowrap text-xs font-bold text-slate-600 dark:text-slate-300"><x-date-range :start="$invoice->issue_date ?: $invoice->created_at" /></td>
+        <td class="whitespace-nowrap text-xs font-bold text-slate-600 dark:text-slate-300"><x-date-range :start="$invoice->event_date" :end="$invoice->event_end_date" /></td>
         <td><x-status-badge :status="$invoice->status" /></td>
         <td class="whitespace-nowrap text-right">
             {{ (int) $invoice->grand_total > 0 ? 'Rp ' . number_format($invoice->grand_total, 0, ',', '.') : '' }}</td>

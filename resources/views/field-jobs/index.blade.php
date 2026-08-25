@@ -24,8 +24,27 @@
                     @endforeach
                 </select>
                 @if($history)<input type="hidden" name="history" value="1">@endif
+                @if($sort)<input type="hidden" name="sort" value="{{ $sort }}"><input type="hidden" name="direction" value="{{ $direction }}">@endif
                 <button class="ip-btn-dark">Terapkan filter</button>
             </form>
+
+            <div class="ip-card p-3 sm:p-4">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <p class="text-[10px] font-extrabold uppercase tracking-[.16em] text-slate-400">Urutkan jadwal</p>
+                        <p class="mt-1 text-xs text-slate-500">Klik lagi untuk membalik urutan, lalu klik ketiga untuk kembali ke default.</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+                        <x-sort-link column="number" label="Nomor" :current="$sort" :direction="$direction" compact />
+                        <x-sort-link column="client" label="Client" :current="$sort" :direction="$direction" compact />
+                        <x-sort-link column="event" label="Acara" :current="$sort" :direction="$direction" compact />
+                        <x-sort-link column="event_date" label="Event" :current="$sort" :direction="$direction" compact />
+                        <x-sort-link column="loading_date" label="Pasang" :current="$sort" :direction="$direction" compact />
+                        <x-sort-link column="teardown_date" label="Bongkar" :current="$sort" :direction="$direction" compact />
+                        <x-sort-link column="status" label="Status" :current="$sort" :direction="$direction" compact />
+                    </div>
+                </div>
+            </div>
 
             <div class="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                 @forelse($jobs as $job)
@@ -39,14 +58,22 @@
                             <x-status-badge :status="$job->status" />
                         </div>
 
-                        <div class="mt-5 grid grid-cols-2 gap-3 rounded-xl bg-sky-50/70 p-3 dark:bg-white/[.035]">
+                        <div class="mt-5 grid grid-cols-2 gap-3 rounded-xl bg-sky-50/70 p-3 sm:grid-cols-3 dark:bg-white/[.035]">
                             <div>
-                                <p class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Jadwal terdekat</p>
-                                <p class="mt-1 text-sm font-bold text-slate-800 dark:text-slate-200">{{ optional($job->activeStages->sortBy('scheduled_at')->first()?->scheduled_at)->translatedFormat('d M Y, H:i') ?: 'Belum diatur' }}</p>
+                                <p class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Event</p>
+                                <p class="mt-1 text-xs font-extrabold text-slate-800 dark:text-slate-200"><x-date-range :start="$job->event_date" /></p>
                             </div>
                             <div>
+                                <p class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Pasang</p>
+                                <p class="mt-1 text-xs font-extrabold text-slate-800 dark:text-slate-200">{{ optional($job->loading_date)->format('d/m/Y H:i') ?: '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Bongkar</p>
+                                <p class="mt-1 text-xs font-extrabold text-slate-800 dark:text-slate-200">{{ optional($job->teardown_date)->format('d/m/Y H:i') ?: '-' }}</p>
+                            </div>
+                            <div class="col-span-2 sm:col-span-3">
                                 <p class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Lokasi</p>
-                                <p class="mt-1 truncate text-sm font-bold text-slate-800 dark:text-slate-200">{{ $job->sites->pluck('name')->filter()->join(', ') ?: ($job->location ?: '-') }}</p>
+                                <p class="mt-1 truncate text-xs font-bold text-slate-700 dark:text-slate-300">{{ $job->sites->pluck('name')->filter()->join(', ') ?: ($job->location ?: '-') }}</p>
                             </div>
                         </div>
 

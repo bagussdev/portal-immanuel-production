@@ -9,10 +9,11 @@ use App\Services\PrivateImageStorage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -51,11 +52,20 @@ class UserController extends Controller
             'password' => ['required', 'confirmed', Password::min(10)->letters()->numbers()],
             'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'ktp_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'ktp_rotation' => ['nullable', 'integer', Rule::in([0, 90, 180, 270])],
         ]);
         $data['username'] = $this->availableUsername($data['username'] ?? null, $data['email']);
-        if ($request->hasFile('profile_photo')) $data['profile_photo_path'] = $images->store($request->file('profile_photo'), 'users/profile')['path'];
-        if ($request->hasFile('ktp_photo')) $data['ktp_photo_path'] = $images->store($request->file('ktp_photo'), 'users/ktp')['path'];
-        unset($data['profile_photo'], $data['ktp_photo']);
+        try {
+            if ($request->hasFile('profile_photo')) {
+                $data['profile_photo_path'] = $images->store($request->file('profile_photo'), 'users/profile')['path'];
+            }
+            if ($request->hasFile('ktp_photo')) {
+                $data['ktp_photo_path'] = $images->store($request->file('ktp_photo'), 'users/ktp', (int) ($data['ktp_rotation'] ?? 0))['path'];
+            }
+        } catch (\RuntimeException) {
+            throw ValidationException::withMessages(['ktp_photo' => 'Foto tidak dapat diproses. Coba unggah ulang dengan format JPG, PNG, atau WebP.']);
+        }
+        unset($data['profile_photo'], $data['ktp_photo'], $data['ktp_rotation']);
         $user = User::create($data + ['active' => true]);
         AuditTrail::record('user.created', $user, [], $user->only(['name', 'email', 'role_id', 'active']));
 
@@ -90,6 +100,7 @@ class UserController extends Controller
             'ktp_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
             'remove_profile_photo' => ['nullable', 'boolean'],
             'remove_ktp_photo' => ['nullable', 'boolean'],
+            'ktp_rotation' => ['nullable', 'integer', Rule::in([0, 90, 180, 270])],
         ]);
         $data['username'] = filled($data['username'] ?? null)
             ? strtolower($data['username'])
@@ -97,13 +108,31 @@ class UserController extends Controller
         if (empty($data['password'])) {
             unset($data['password']);
         }
-        foreach ([['profile_photo', 'profile_photo_path', 'remove_profile_photo'], ['ktp_photo', 'ktp_photo_path', 'remove_ktp_photo']] as [$input, $column, $remove]) {
-            if ($request->boolean($remove) || $request->hasFile($input)) {
-                if ($user->{$column}) Storage::disk('local')->delete($user->{$column});
-                $data[$column] = $request->hasFile($input) ? $images->store($request->file($input), $column === 'ktp_photo_path' ? 'users/ktp' : 'users/profile')['path'] : null;
+        try {
+            foreach ([['profile_photo', 'profile_photo_path', 'remove_profile_photo'], ['ktp_photo', 'ktp_photo_path', 'remove_ktp_photo']] as [$input, $column, $remove]) {
+                if ($request->hasFile($input)) {
+                    $rotation = $input === 'ktp_photo' ? (int) ($data['ktp_rotation'] ?? 0) : 0;
+                    $newPath = $images->store($request->file($input), $column === 'ktp_photo_path' ? 'users/ktp' : 'users/profile', $rotation)['path'];
+                    if ($user->{$column}) {
+                        Storage::disk('local')->delete($user->{$column});
+                    }
+                    $data[$column] = $newPath;
+                } elseif ($request->boolean($remove)) {
+                    if ($user->{$column}) {
+                        Storage::disk('local')->delete($user->{$column});
+                    }
+                    $data[$column] = null;
+                } elseif ($input === 'ktp_photo' && (int) ($data['ktp_rotation'] ?? 0) !== 0 && $user->ktp_photo_path) {
+                    if (! $images->rotateStored($user->ktp_photo_path, (int) $data['ktp_rotation'])) {
+                        throw new \RuntimeException('KTP tidak dapat diputar.');
+                    }
+                }
+                unset($data[$input], $data[$remove]);
             }
-            unset($data[$input], $data[$remove]);
+        } catch (\RuntimeException) {
+            throw ValidationException::withMessages(['ktp_photo' => 'Foto tidak dapat diproses. Coba unggah ulang dengan format JPG, PNG, atau WebP.']);
         }
+        unset($data['ktp_rotation']);
         $before = $user->only(['name', 'username', 'email', 'no_telf', 'role_id', 'active']);
         $user->update($data);
         AuditTrail::record('user.updated', $user, $before, $user->only(array_keys($before)));
@@ -135,7 +164,9 @@ class UserController extends Controller
         $this->authorize('usercontrol');
         abort_if($user->is(auth()->user()) || $user->isMaster(), 422, 'Akun ini tidak dapat dihapus.');
         foreach ([$user->profile_photo_path, $user->ktp_photo_path] as $path) {
-            if ($path) Storage::disk('local')->delete($path);
+            if ($path) {
+                Storage::disk('local')->delete($path);
+            }
         }
         $user->delete();
         AuditTrail::record('user.deleted', $user);
@@ -146,7 +177,7 @@ class UserController extends Controller
     public function photo(User $user, string $kind)
     {
         if ($kind === 'ktp') {
-            $this->authorize('exportuserdata');
+            abort_unless(auth()->user()->can('exportuserdata') || auth()->user()->can('edituser'), 403);
         } else {
             abort_unless(auth()->id() === $user->id || auth()->user()->can('menuuser'), 403);
         }
