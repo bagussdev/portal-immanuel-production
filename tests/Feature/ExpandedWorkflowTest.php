@@ -119,13 +119,13 @@ class ExpandedWorkflowTest extends TestCase
         $this->actingAs($admin)->post(route('invoices.store'), [
             'client_name' => 'Pak Komang',
             'event_name' => 'Festival Multi Lokasi',
+            'event_date' => $start->toDateString(),
+            'event_end_date' => $start->copy()->addDay()->toDateString(),
             'discount_mode' => 'amount',
             'tax_mode' => 'amount',
             'locations' => [
                 [
                     'name' => 'The Meru Sanur',
-                    'event_start_date' => $start->toDateString(),
-                    'event_end_date' => $start->copy()->addDay()->toDateString(),
                     'loading_date' => $start->copy()->subDay()->setTime(8, 0)->format('Y-m-d H:i:s'),
                     'teardown_date' => $start->copy()->addDays(2)->setTime(20, 0)->format('Y-m-d H:i:s'),
                     'work_flow' => Invoice::FLOW_INSTALL_TEARDOWN,
@@ -136,7 +136,6 @@ class ExpandedWorkflowTest extends TestCase
                 ],
                 [
                     'name' => 'Pantai Sanur',
-                    'event_start_date' => $start->copy()->addDays(3)->toDateString(),
                     'work_flow' => Invoice::FLOW_ONE_WAY,
                     'items' => [[
                         'item_name' => 'Paket dekorasi', 'qty' => 12,
@@ -148,8 +147,26 @@ class ExpandedWorkflowTest extends TestCase
 
         $invoice = Invoice::latest('id')->firstOrFail();
         $this->assertSame(2, $invoice->locations()->count());
+        $this->assertSame($start->toDateString(), $invoice->event_date->toDateString());
+        $this->assertSame($start->copy()->addDay()->toDateString(), $invoice->event_end_date->toDateString());
+        $this->assertTrue($invoice->locations->every(fn ($location) => $location->event_start_date->isSameDay($start)));
         $this->assertSame(7_250_000, (int) $invoice->fresh()->grand_total);
         $this->assertSame('total', $invoice->locations()->where('name', 'Pantai Sanur')->firstOrFail()->items()->firstOrFail()->pricing_mode);
+
+        $invoice->load(['client', 'bankDetail', 'locations.items', 'items', 'payments']);
+        $multiLocationHtml = view('invoices.pdf', compact('invoice'))->render();
+        $this->assertSame(2, substr_count($multiLocationHtml, '<div class="location-head">'));
+        $this->assertSame(1, substr_count($multiLocationHtml, 'Bongkar:'));
+        $this->assertStringNotContainsString('08:00', $multiLocationHtml);
+        $this->assertStringNotContainsString('20:00', $multiLocationHtml);
+        $this->assertStringNotContainsString('Acara:', $multiLocationHtml);
+
+        $invoice->setRelation('locations', $invoice->locations->take(1));
+        $singleLocationHtml = view('invoices.pdf', compact('invoice'))->render();
+        $this->assertSame(0, substr_count($singleLocationHtml, '<div class="location-head">'));
+        $this->assertStringNotContainsString('Jumlah lokasi', $singleLocationHtml);
+        $this->assertStringContainsString('The Meru Sanur', $singleLocationHtml);
+        $invoice->unsetRelation('locations');
 
         $this->post(route('invoices.issue', $invoice), [
             'issue_date' => today()->toDateString(),
@@ -220,7 +237,11 @@ class ExpandedWorkflowTest extends TestCase
         $this->get(route('field-jobs.index', ['sort' => 'event_date', 'direction' => 'asc']))
             ->assertOk()->assertSeeInOrder(['Sort Event Lama', 'Sort Event Baru'])->assertSeeText('Urutkan jadwal');
         $this->get(route('invoices.create'))
-            ->assertOk()->assertSeeText('Simpan nama')->assertSee('editItemName(item)', false);
+            ->assertOk()
+            ->assertSeeText('Simpan nama')
+            ->assertSee('editItemName(item)', false)
+            ->assertSee('name="event_date"', false)
+            ->assertDontSee('event_start_date', false);
     }
 
     public function test_pay_all_only_marks_draft_slips_in_an_open_period(): void

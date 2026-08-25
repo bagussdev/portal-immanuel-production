@@ -177,7 +177,7 @@ class UserController extends Controller
     public function photo(User $user, string $kind)
     {
         if ($kind === 'ktp') {
-            abort_unless(auth()->user()->can('exportuserdata') || auth()->user()->can('edituser'), 403);
+            abort_unless(auth()->id() === $user->id || auth()->user()->can('exportuserdata') || auth()->user()->can('edituser'), 403);
         } else {
             abort_unless(auth()->id() === $user->id || auth()->user()->can('menuuser'), 403);
         }

@@ -393,8 +393,9 @@ class InvoiceController extends Controller
         return [
             'client_id' => $clientId, 'bank_detail_id' => $data['bank_detail_id'] ?? null,
             'event_name' => $data['event_name'] ?? null,
-            'location_event' => $first['name'] ?? null, 'event_date' => $first['event_start_date'] ?? null,
-            'event_end_date' => $first['event_end_date'] ?? null,
+            'location_event' => $first['name'] ?? null,
+            'event_date' => $data['event_date'] ?? $first['event_start_date'] ?? null,
+            'event_end_date' => $data['event_end_date'] ?? $first['event_end_date'] ?? null,
             'loading_date' => $first['loading_date'] ?? null, 'bongkaran_date' => $first['teardown_date'] ?? null,
             'work_flow' => $first['work_flow'] ?? Invoice::FLOW_INSTALL_TEARDOWN,
             'notes' => $data['notes'] ?? null, 'operational_notes' => $data['operational_notes'] ?? null,

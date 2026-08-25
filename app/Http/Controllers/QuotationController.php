@@ -250,8 +250,9 @@ class QuotationController extends Controller
         return [
             'client_id' => $clientId, 'bank_detail_id' => $data['bank_detail_id'] ?? null,
             'event_name' => $data['event_name'] ?? null,
-            'location_event' => $first['name'] ?? null, 'event_date' => $first['event_start_date'] ?? null,
-            'event_end_date' => $first['event_end_date'] ?? null,
+            'location_event' => $first['name'] ?? null,
+            'event_date' => $data['event_date'] ?? $first['event_start_date'] ?? null,
+            'event_end_date' => $data['event_end_date'] ?? $first['event_end_date'] ?? null,
             'loading_date' => $first['loading_date'] ?? null, 'bongkaran_date' => $first['teardown_date'] ?? null,
             'description' => $data['description'] ?? null, 'subtotal' => $summary['subtotal'],
             'discount_percent' => $summary['discount_percent'], 'discount' => $summary['discount_value'],

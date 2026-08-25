@@ -9,7 +9,16 @@ class DocumentLocations
     public static function normalize(array $data, string $defaultFlow = 'install_teardown'): array
     {
         if (! empty($data['locations'])) {
-            return array_values($data['locations']);
+            $locations = array_values($data['locations']);
+            $eventStart = $data['event_date'] ?? $locations[0]['event_start_date'] ?? null;
+            $eventEnd = $data['event_end_date'] ?? $locations[0]['event_end_date'] ?? null;
+
+            return array_map(function (array $location) use ($eventStart, $eventEnd) {
+                $location['event_start_date'] = $eventStart;
+                $location['event_end_date'] = $eventEnd;
+
+                return $location;
+            }, $locations);
         }
 
         return [[
@@ -51,6 +60,7 @@ class DocumentLocations
                         'pricing_mode' => $mode, 'unit_price' => 0, 'total' => 0,
                         'price_group' => $items[$leaderIndex]['price_group'],
                     ];
+
                     continue;
                 }
 

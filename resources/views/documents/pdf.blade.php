@@ -6,6 +6,19 @@
     $discount = (int) ($isInvoice ? $document->discount_value : $document->discount);
     $money = fn($value) => (int)$value > 0 ? 'Rp '.number_format((int)$value, 0, ',', '.') : '';
     $notes = $isInvoice ? $document->notes : $document->description;
+    $locations = $document->locations;
+    if ($locations->isEmpty()) {
+        $locations = collect([new \Illuminate\Support\Fluent([
+            'name' => $document->location_event,
+            'loading_date' => $document->loading_date,
+            'teardown_date' => $document->bongkaran_date,
+            'items' => $document->items,
+        ])]);
+    }
+    $multipleLocations = $locations->count() > 1;
+    $singleLocation = $locations->first();
+    $eventStart = $document->event_date ?: $singleLocation?->event_start_date;
+    $eventEnd = $document->event_end_date ?: $singleLocation?->event_end_date;
 @endphp
 <!DOCTYPE html>
 <html lang="id"><head><meta charset="UTF-8"><title>{{ $title }}</title><style>
@@ -21,7 +34,9 @@
     .document-title { color:#0f172a; font-size:25px; font-weight:700; letter-spacing:1px; }
     .document-number { text-align:right; font-size:11px; }
     .info { width:100%; margin-bottom:14px; border-collapse:collapse; background:#f8fafc; border:1px solid #cbd5e1; }
-    .info td { padding:8px 10px; vertical-align:top; width:50%; } .info strong { color:#0f172a; }
+    .info > tbody > tr > td { padding:8px 10px; vertical-align:top; width:50%; } .info strong { color:#0f172a; }
+    .info-lines { width:100%; border-collapse:collapse; background:transparent; } .info-lines td { width:auto; padding:2px 0; vertical-align:top; }
+    .info-lines td:first-child { width:90px; color:#64748b; }
     .location { margin:0 0 14px; page-break-inside:auto; } .location-head { padding:8px 10px; background:#eaf4fb; border-left:4px solid #0284c7; page-break-after:avoid; }
     .location-name { color:#0f172a; font-size:12px; font-weight:700; } .schedule { margin-top:3px; color:#64748b; font-size:9px; }
     table.items { width:100%; border-collapse:collapse; page-break-inside:auto; }
@@ -41,12 +56,23 @@
 <div class="header"><table><tr><td><img class="logo" src="{{ $documentLogo }}" alt="Logo"></td><td class="company"><strong>IMMANUEL PRODUCTION</strong><span class="muted">Jl. Mekar Blok D1 No 15, Denpasar Selatan, Bali<br>admin@immanuelproduction.com | 0818550837</span></td></tr></table></div>
 
 <div class="document-head"><table><tr><td><div class="document-title">{{ $title }}</div><div class="muted">{{ $isInvoice ? 'Tagihan pekerjaan' : 'Penawaran pekerjaan' }}</div></td><td class="document-number"><strong>{{ $number }}</strong><br><span class="muted">{{ $date?->format('d-m-Y') }}</span></td></tr></table></div>
-<table class="info"><tr><td><strong>Client</strong><br>{{ $document->client?->name ?: '-' }}<br><br><strong>Acara</strong><br>{{ $document->event_name ?: '-' }}</td><td><strong>Jumlah lokasi</strong><br>{{ $document->locations->count() }} lokasi<br><br><strong>Tanggal acara</strong><br>{{ \App\Support\DateRange::format($document->locations->first()?->event_start_date, $document->locations->first()?->event_end_date) }}</td></tr></table>
+<table class="info"><tr><td><table class="info-lines">
+    <tr><td>Client</td><td>: <strong>{{ $document->client?->name ?: '-' }}</strong></td></tr>
+    <tr><td>Tanggal acara</td><td>: {{ \App\Support\DateRange::format($eventStart, $eventEnd) }}</td></tr>
+    <tr><td>Acara</td><td>: {{ $document->event_name ?: '-' }}</td></tr>
+    @unless($multipleLocations)<tr><td>Lokasi</td><td>: {{ $singleLocation?->name ?: ($document->location_event ?: '-') }}</td></tr>
+    <tr><td>Loading</td><td>: {{ optional($singleLocation?->loading_date)->format('d-m-Y') ?: '-' }}</td></tr>
+    @if($singleLocation?->teardown_date)<tr><td>Bongkar</td><td>: {{ optional($singleLocation->teardown_date)->format('d-m-Y') }}</td></tr>@endif @endunless
+</table></td><td><table class="info-lines">
+    <tr><td>{{ $isInvoice ? 'Invoice No' : 'Quotation No' }}</td><td>: <strong>{{ $number }}</strong></td></tr>
+    <tr><td>{{ $isInvoice ? 'Invoice Date' : 'Quotation Date' }}</td><td>: {{ $date?->format('d-m-Y') }}</td></tr>
+    @if($multipleLocations)<tr><td>Jumlah lokasi</td><td>: {{ $locations->count() }} lokasi</td></tr>@endif
+</table></td></tr></table>
 
-@foreach($document->locations as $location)
+@foreach($locations as $location)
     @php($showUnitPrice = $location->items->contains(fn($item) => $item->pricing_mode === 'unit' && (int)$item->unit_price > 0))
     <section class="location">
-        <div class="location-head"><div class="location-name">{{ $location->name ?: 'Lokasi belum ditentukan' }}</div><div class="schedule">Acara: {{ \App\Support\DateRange::format($location->event_start_date, $location->event_end_date) }} | Loading: {{ optional($location->loading_date)->format('d-m-Y H:i') ?: '-' }} @if($location->work_flow === 'install_teardown') | Bongkar: {{ optional($location->teardown_date)->format('d-m-Y H:i') ?: '-' }} @endif</div></div>
+        @if($multipleLocations)<div class="location-head"><div class="location-name">{{ $location->name ?: 'Lokasi belum ditentukan' }}</div><div class="schedule">Loading: {{ optional($location->loading_date)->format('d-m-Y') ?: '-' }}@if($location->teardown_date) | Bongkar: {{ optional($location->teardown_date)->format('d-m-Y') }}@endif</div></div>@endif
         <table class="items"><thead><tr><th style="width:28px">No</th><th>Item</th><th style="width:48px">Qty</th><th style="width:55px">Size</th>@if($showUnitPrice)<th style="width:90px">Harga Satuan</th>@endif<th style="width:95px">Total</th></tr></thead><tbody>
             @foreach($location->items as $item)<tr><td class="num">{{ $loop->iteration }}</td><td>{{ $item->item_name }}</td><td class="qty">{{ rtrim(rtrim(number_format((float)$item->qty,2,',','.'),'0'),',') }}</td><td class="size">{{ filled($item->length) && (float)$item->length > 0 ? rtrim(rtrim(number_format((float)$item->length,2,',','.'),'0'),',') : '' }}</td>@if($showUnitPrice)<td class="price">{{ $item->pricing_mode === 'unit' ? $money($item->unit_price) : '' }}</td>@endif<td class="price"><strong>{{ $money($item->total) }}</strong></td></tr>@endforeach
         </tbody></table>

@@ -12,10 +12,12 @@
 
 <script>
     function showFullScreenLoader() {
-        document.getElementById('loading-overlay').classList.remove('hidden');
+        document.getElementById('loading-overlay')?.classList.remove('hidden');
     }
 
     function hideFullScreenLoader() {
-        document.getElementById('loading-overlay').classList.add('hidden');
+        document.getElementById('loading-overlay')?.classList.add('hidden');
     }
+
+    window.addEventListener('pageshow', hideFullScreenLoader);
 </script>

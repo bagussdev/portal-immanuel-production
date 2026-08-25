@@ -1,69 +1,91 @@
-<section>
-    <header>
-        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-            {{ __('Profile Information') }}
-        </h2>
+@php
+    $profileUrl = $user->profile_photo_path ? route('users.photo', [$user, 'profile']) : null;
+    $ktpUrl = $user->ktp_photo_path ? route('users.photo', [$user, 'ktp']) : null;
+@endphp
 
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {{ __("Update your account's profile information and email address.") }}
-        </p>
-    </header>
+<form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="space-y-5"
+    x-data="{
+        profilePreview: @js($profileUrl),
+        ktpPreview: @js($ktpUrl),
+        profileFileName: '',
+        ktpFileName: '',
+        ktpRotation: 0,
+        previewFile(event, kind) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const preview = URL.createObjectURL(file);
+            if (kind === 'profile') {
+                this.profilePreview = preview;
+                this.profileFileName = file.name;
+            } else {
+                this.ktpPreview = preview;
+                this.ktpFileName = file.name;
+                this.ktpRotation = 0;
+            }
+        },
+        rotateKtp(step) { this.ktpRotation = (this.ktpRotation + step + 360) % 360 }
+    }"
+    onsubmit="showFullScreenLoader()">
+    @csrf
+    @method('PATCH')
 
-    <form id="send-verification" method="post" action="{{ route('verification.send') }}">
-        @csrf
-    </form>
-
-    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
-        @csrf
-        @method('patch')
-
-        <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)"
-                required autofocus autocomplete="name" />
-            <x-input-error class="mt-2" :messages="$errors->get('name')" />
-        </div>
-
-        <div>
-            <x-input-label for="no_telf" :value="__('No Telf')" />
-            <x-text-input id="no_telf" name="no_telf" type="text" class="mt-1 block w-full" :value="old('no_telf', $user->no_telf)"
-                required autofocus autocomplete="no_telf" />
-            <x-input-error class="mt-2" :messages="$errors->get('no_telf')" />
-        </div>
-
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)"
-                required autocomplete="username" />
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
-
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && !$user->hasVerifiedEmail())
+    <div class="grid gap-5 xl:grid-cols-[380px,minmax(0,1fr)]">
+        <section class="ip-card p-5 sm:p-6">
+            <p class="ip-kicker">Identitas</p>
+            <div class="mt-4 space-y-6">
                 <div>
-                    <p class="text-sm mt-2 text-gray-800 dark:text-gray-200">
-                        {{ __('Your email address is unverified.') }}
-
-                        <button form="send-verification"
-                            class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">
-                            {{ __('Click here to re-send the verification email.') }}
-                        </button>
-                    </p>
-
-                    @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600 dark:text-green-400">
-                            {{ __('A new verification link has been sent to your email address.') }}
-                        </p>
-                    @endif
+                    <div class="flex items-end justify-between gap-3">
+                        <div><h2 class="text-sm font-extrabold text-slate-800 dark:text-white">Foto profil</h2><p class="mt-0.5 text-xs text-slate-400">Bingkai persegi, maksimal 5 MB.</p></div>
+                        <span class="rounded-lg bg-sky-50 px-2 py-1 text-[10px] font-extrabold text-sky-700 dark:bg-white/[.05] dark:text-red-300">1 : 1</span>
+                    </div>
+                    <div class="mx-auto mt-3 aspect-square w-full max-w-[210px] overflow-hidden rounded-3xl border-2 border-dashed border-sky-200 bg-sky-50 shadow-inner dark:border-white/15 dark:bg-white/[.03]">
+                        <template x-if="profilePreview"><img :src="profilePreview" class="h-full w-full object-cover" alt="Preview foto profil"></template>
+                        <template x-if="!profilePreview"><div class="flex h-full w-full items-center justify-center text-5xl font-black text-sky-700 dark:text-red-400">{{ strtoupper(substr($user->name, 0, 1)) }}</div></template>
+                    </div>
+                    <label class="ip-btn-secondary mt-3 w-full cursor-pointer justify-center"><span>Pilih foto profil</span><input type="file" name="profile_photo" accept=".jpg,.jpeg,.png,.webp" class="sr-only" @change="previewFile($event, 'profile')"></label>
+                    <p x-show="profileFileName" x-text="profileFileName" class="mt-2 truncate text-center text-xs font-semibold text-slate-500"></p>
+                    <x-input-error :messages="$errors->get('profile_photo')" class="mt-2" />
+                    @if($user->profile_photo_path)<label class="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-500"><input type="checkbox" name="remove_profile_photo" value="1" class="rounded"> Hapus foto profil</label>@endif
                 </div>
-            @endif
-        </div>
 
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+                <div class="border-t border-sky-100 pt-5 dark:border-white/10">
+                    <div class="flex items-end justify-between gap-3">
+                        <div><h2 class="text-sm font-extrabold text-slate-800 dark:text-white">Foto KTP</h2><p class="mt-0.5 text-xs text-slate-400">Bingkai kartu, maksimal 8 MB.</p></div>
+                        <span class="rounded-lg bg-sky-50 px-2 py-1 text-[10px] font-extrabold text-sky-700 dark:bg-white/[.05] dark:text-red-300">85,6 × 54 mm</span>
+                    </div>
+                    <div class="relative mt-3 aspect-[856/540] w-full overflow-hidden rounded-2xl border-2 border-dashed border-sky-200 bg-slate-100 shadow-inner dark:border-white/15 dark:bg-black/30">
+                        <template x-if="ktpPreview"><img :src="ktpPreview" :style="`transform: rotate(${ktpRotation}deg) scale(${ktpRotation % 180 ? 0.62 : 1})`" class="h-full w-full object-contain transition-transform duration-200" alt="Preview KTP"></template>
+                        <template x-if="!ktpPreview"><div class="flex h-full w-full flex-col items-center justify-center text-slate-400"><svg class="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5.5 16c.6-1.6 1.5-2.4 2.5-2.4s1.9.8 2.5 2.4M13 10h5M13 14h5"/></svg><span class="mt-2 text-xs font-bold">Belum ada KTP</span></div></template>
+                    </div>
+                    <input type="hidden" name="ktp_rotation" :value="ktpRotation">
+                    <div class="mt-3 grid grid-cols-[1fr,44px,44px] gap-2">
+                        <label class="ip-btn-secondary min-w-0 cursor-pointer justify-center"><span class="truncate">Pilih foto KTP</span><input type="file" name="ktp_photo" accept=".jpg,.jpeg,.png,.webp" class="sr-only" @change="previewFile($event, 'ktp')"></label>
+                        <button type="button" @click="rotateKtp(-90)" :disabled="!ktpPreview" class="flex h-11 items-center justify-center rounded-xl border border-sky-200 bg-white text-lg font-bold text-sky-700 disabled:opacity-40 dark:border-white/10 dark:bg-white/[.04] dark:text-red-300" aria-label="Putar KTP ke kiri">↶</button>
+                        <button type="button" @click="rotateKtp(90)" :disabled="!ktpPreview" class="flex h-11 items-center justify-center rounded-xl border border-sky-200 bg-white text-lg font-bold text-sky-700 disabled:opacity-40 dark:border-white/10 dark:bg-white/[.04] dark:text-red-300" aria-label="Putar KTP ke kanan">↷</button>
+                    </div>
+                    <p x-show="ktpFileName" x-text="ktpFileName" class="mt-2 truncate text-center text-xs font-semibold text-slate-500"></p>
+                    <x-input-error :messages="$errors->get('ktp_photo')" class="mt-2" />
+                    @if($user->ktp_photo_path)<label class="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-500"><input type="checkbox" name="remove_ktp_photo" value="1" class="rounded"> Hapus foto KTP</label>@endif
+                </div>
+            </div>
+        </section>
 
-            @if (session('status') === 'profile-updated')
-                <p x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600 dark:text-gray-400">{{ __('Saved.') }}</p>
-            @endif
-        </div>
-    </form>
-</section>
+        <section class="ip-card p-5 sm:p-6">
+            <p class="ip-kicker">Informasi akun</p>
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                <label class="block text-sm font-bold text-slate-700 dark:text-slate-200">Nama lengkap<input name="name" value="{{ old('name', $user->name) }}" required autofocus autocomplete="name" class="ip-input mt-1"><x-input-error :messages="$errors->get('name')" class="mt-2" /></label>
+                <label class="block text-sm font-bold text-slate-700 dark:text-slate-200">Username<input name="username" value="{{ old('username', $user->username) }}" required autocomplete="username" class="ip-input mt-1"><x-input-error :messages="$errors->get('username')" class="mt-2" /></label>
+                <label class="block text-sm font-bold text-slate-700 dark:text-slate-200">Email<input type="email" name="email" value="{{ old('email', $user->email) }}" required autocomplete="email" class="ip-input mt-1"><x-input-error :messages="$errors->get('email')" class="mt-2" /></label>
+                <label class="block text-sm font-bold text-slate-700 dark:text-slate-200">Nomor telepon<input type="tel" inputmode="tel" name="no_telf" value="{{ old('no_telf', $user->no_telf) }}" autocomplete="tel" class="ip-input mt-1"><x-input-error :messages="$errors->get('no_telf')" class="mt-2" /></label>
+            </div>
+            <div class="mt-5 grid gap-3 border-t border-sky-100 pt-5 sm:grid-cols-2 dark:border-white/10">
+                <div class="rounded-2xl bg-sky-50 p-4 dark:bg-white/[.04]"><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Role</p><p class="mt-1 font-extrabold capitalize text-slate-800 dark:text-white">{{ $user->role?->name ?: '-' }}</p></div>
+                <div class="rounded-2xl bg-sky-50 p-4 dark:bg-white/[.04]"><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Status</p><p class="mt-1 font-extrabold text-emerald-600">{{ $user->active ? 'Aktif' : 'Nonaktif' }}</p></div>
+            </div>
+            <div class="mt-6 flex flex-wrap items-center justify-end gap-3">
+                @if(session('status') === 'profile-updated')<span x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 2500)" class="text-sm font-bold text-emerald-600">Profil tersimpan.</span>@endif
+                <button type="submit" class="ip-btn-primary px-6">Simpan profil</button>
+            </div>
+        </section>
+    </div>
+</form>

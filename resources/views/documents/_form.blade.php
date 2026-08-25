@@ -5,8 +5,6 @@
     if (!$initialLocations) {
         $initialLocations = $sourceLocations->map(fn($location) => [
             'name' => $location->name,
-            'event_start_date' => optional($location->event_start_date)->format('Y-m-d'),
-            'event_end_date' => optional($location->event_end_date)->format('Y-m-d'),
             'loading_date' => optional($location->loading_date)->format('Y-m-d\TH:i'),
             'teardown_date' => optional($location->teardown_date)->format('Y-m-d\TH:i'),
             'work_flow' => $location->work_flow ?: 'install_teardown',
@@ -25,8 +23,7 @@
     if (!$initialLocations) {
         $loadedItems = $document->relationLoaded('items') ? $document->items : collect();
         $initialLocations = [[
-            'name' => $document->location_event, 'event_start_date' => optional($document->event_date)->format('Y-m-d'),
-            'event_end_date' => optional($document->event_end_date)->format('Y-m-d'),
+            'name' => $document->location_event,
             'loading_date' => optional($document->loading_date)->format('Y-m-d\TH:i'),
             'teardown_date' => optional($document->bongkaran_date)->format('Y-m-d\TH:i'),
             'work_flow' => $document->work_flow ?: 'install_teardown',
@@ -42,6 +39,8 @@
     $discountAmount = $isInvoice ? ($document->discount_value ?? 0) : ($document->discount ?? 0);
     $discountMode = old('discount_mode', $document->discount_percent !== null ? 'percent' : 'amount');
     $taxMode = old('tax_mode', $document->tax_percent !== null ? 'percent' : 'amount');
+    $eventStart = old('event_date', optional($document->event_date ?: $sourceLocations->first()?->event_start_date)->format('Y-m-d'));
+    $eventEnd = old('event_end_date', optional($document->event_end_date ?: $sourceLocations->first()?->event_end_date)->format('Y-m-d'));
 @endphp
 
 <form method="POST" action="{{ $action }}" id="documentForm" class="space-y-4" @submit="if (!validateItemNames()) $event.preventDefault()"
@@ -50,13 +49,18 @@
     @if($method !== 'POST') @method($method) @endif
 
     <x-responsive-disclosure kicker="Informasi utama" title="Client & acara" :mobile-open="true">
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Nama client
                 <input name="client_name" list="clientSuggestions" required value="{{ old('client_name', $document->client?->name) }}" class="ip-input mt-1" placeholder="Ketik nama client">
                 <datalist id="clientSuggestions">@foreach($clients as $client)<option value="{{ $client->name }}">@endforeach</datalist>
                 <x-input-error :messages="$errors->get('client_name')" class="mt-2" />
             </label>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Nama acara<input name="event_name" value="{{ old('event_name', $document->event_name) }}" class="ip-input mt-1" placeholder="Nama acara"></label>
+            <fieldset class="rounded-xl border border-sky-100 bg-white p-3 md:col-span-2 dark:border-white/10 dark:bg-white/[.04]">
+                <legend class="px-1 text-xs font-extrabold text-slate-500">Tanggal acara</legend>
+                <div class="grid grid-cols-2 gap-2"><label class="text-[10px] font-bold text-slate-400">Mulai<input type="date" name="event_date" value="{{ $eventStart }}" class="ip-input mt-1 !py-2 text-xs"></label><label class="text-[10px] font-bold text-slate-400">Sampai<input type="date" name="event_end_date" value="{{ $eventEnd }}" min="{{ $eventStart }}" class="ip-input mt-1 !py-2 text-xs"></label></div>
+                <x-input-error :messages="$errors->get('event_date')" class="mt-2" /><x-input-error :messages="$errors->get('event_end_date')" class="mt-2" />
+            </fieldset>
         </div>
     </x-responsive-disclosure>
 
@@ -72,12 +76,8 @@
                         <h3 class="font-extrabold text-slate-900 dark:text-white" x-text="`Lokasi ${locationIndex + 1}`"></h3>
                         <button type="button" x-show="locations.length > 1" @click="removeLocation(locationIndex)" class="text-xs font-extrabold text-red-600">Hapus lokasi</button>
                     </div>
-                    <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         <label class="text-sm font-semibold text-slate-600 dark:text-slate-300">Lokasi<input :name="`locations[${locationIndex}][name]`" x-model="location.name" class="ip-input mt-1" placeholder="Nama lokasi"></label>
-                        <fieldset class="rounded-xl border border-sky-100 bg-white p-3 dark:border-white/10 dark:bg-white/[.04]">
-                            <legend class="px-1 text-xs font-extrabold text-slate-500">Tanggal acara</legend>
-                            <div class="grid grid-cols-2 gap-2"><label class="text-[10px] font-bold text-slate-400">Mulai<input type="date" :name="`locations[${locationIndex}][event_start_date]`" x-model="location.event_start_date" class="ip-input mt-1 !py-2 text-xs"></label><label class="text-[10px] font-bold text-slate-400">Sampai<input type="date" :name="`locations[${locationIndex}][event_end_date]`" x-model="location.event_end_date" :min="location.event_start_date" class="ip-input mt-1 !py-2 text-xs"></label></div>
-                        </fieldset>
                         <label class="text-sm font-semibold text-slate-600 dark:text-slate-300">Loading<input type="datetime-local" :name="`locations[${locationIndex}][loading_date]`" x-model="location.loading_date" class="ip-input mt-1"></label>
                         <label class="text-sm font-semibold text-slate-600 dark:text-slate-300" x-show="location.work_flow === 'install_teardown'">Bongkar<input type="datetime-local" :name="`locations[${locationIndex}][teardown_date]`" x-model="location.teardown_date" class="ip-input mt-1"></label>
                     </div>
@@ -160,7 +160,7 @@
 <script>
 function documentEditor(initialLocations, discountMode, taxMode) {
     const row = () => ({ key: crypto.randomUUID(), item_name: '', qty: 1, length: '', pricing_mode: 'unit', unit_price: '', line_total: '', merge_price: false });
-    const site = () => ({ key: crypto.randomUUID(), name: '', event_start_date: '', event_end_date: '', loading_date: '', teardown_date: '', work_flow: 'install_teardown', items: [row()] });
+    const site = () => ({ key: crypto.randomUUID(), name: '', loading_date: '', teardown_date: '', work_flow: 'install_teardown', items: [row()] });
     const normalized = (initialLocations || []).map(location => ({ ...site(), ...location, items: (location.items || [row()]).map(item => ({ ...row(), ...item })) }));
     return {
         locations: normalized.length ? normalized : [site()], discountMode, taxMode,

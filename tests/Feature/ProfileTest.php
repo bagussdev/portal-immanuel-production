@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -18,7 +20,11 @@ class ProfileTest extends TestCase
             ->actingAs($user)
             ->get('/profile');
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertSeeText('Edit profil')
+            ->assertSeeText('Foto KTP')
+            ->assertSeeText('Ubah password')
+            ->assertSee("window.addEventListener('pageshow', hideFullScreenLoader)", false);
     }
 
     public function test_profile_information_can_be_updated(): void
@@ -59,6 +65,46 @@ class ProfileTest extends TestCase
             ->assertRedirect('/profile');
 
         $this->assertNotNull($user->refresh()->email_verified_at);
+    }
+
+    public function test_user_can_manage_and_rotate_their_own_profile_photos(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create(['username' => 'profil.sendiri']);
+
+        $this->actingAs($user)->patch(route('profile.update'), [
+            'name' => 'Profil Sendiri',
+            'username' => 'profil.sendiri',
+            'email' => $user->email,
+            'no_telf' => '081234567890',
+            'profile_photo' => UploadedFile::fake()->image('profil.jpg', 180, 240),
+            'ktp_photo' => UploadedFile::fake()->image('ktp.jpg', 320, 200),
+            'ktp_rotation' => 90,
+        ])->assertSessionHasNoErrors()->assertRedirect(route('profile.edit'));
+
+        $user->refresh();
+        Storage::disk('local')->assertExists($user->profile_photo_path);
+        Storage::disk('local')->assertExists($user->ktp_photo_path);
+        [$width, $height] = getimagesize(Storage::disk('local')->path($user->ktp_photo_path));
+        $this->assertSame([200, 320], [$width, $height]);
+
+        $this->get(route('users.photo', [$user, 'profile']))->assertOk();
+        $this->get(route('users.photo', [$user, 'ktp']))->assertOk();
+        $this->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSeeText('85,6 × 54 mm')
+            ->assertSee('ktpPreview:', false);
+
+        $this->patch(route('profile.update'), [
+            'name' => $user->name,
+            'username' => $user->username,
+            'email' => $user->email,
+            'no_telf' => $user->no_telf,
+            'ktp_rotation' => 90,
+        ])->assertSessionHasNoErrors();
+
+        [$width, $height] = getimagesize(Storage::disk('local')->path($user->ktp_photo_path));
+        $this->assertSame([320, 200], [$width, $height]);
     }
 
     public function test_user_can_delete_their_account(): void

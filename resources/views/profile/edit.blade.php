@@ -1,31 +1,24 @@
 <x-app-layout>
     <x-dashboard.sidebar>
         <x-alert-information />
-        <x-slot name="header">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('Profile') }}
-            </h2>
-        </x-slot>
-
-        <div class="py-5">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-                <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
-                    <div class="max-w-xl">
-                        @include('profile.partials.update-profile-information-form')
-                    </div>
+        <div class="ip-page max-w-6xl">
+            <header class="ip-page-header">
+                <div>
+                    <p class="ip-kicker">Akun saya</p>
+                    <h1 class="ip-title">Edit profil</h1>
+                    <p class="ip-subtitle">Perbarui identitas, foto, KTP, dan keamanan akun.</p>
                 </div>
+            </header>
 
-                <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
-                    <div class="max-w-xl">
-                        @include('profile.partials.update-password-form')
-                    </div>
-                </div>
+            @include('profile.partials.update-profile-information-form')
 
-                <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
-                    <div class="max-w-xl">
-                        @include('profile.partials.delete-user-form')
-                    </div>
-                </div>
+            <div class="grid gap-5 lg:grid-cols-2">
+                <section class="ip-card p-5 sm:p-6">
+                    @include('profile.partials.update-password-form')
+                </section>
+                <section class="ip-card border-red-100 p-5 sm:p-6 dark:border-red-500/20">
+                    @include('profile.partials.delete-user-form')
+                </section>
             </div>
         </div>
     </x-dashboard.sidebar>
