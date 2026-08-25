@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\FieldJob;
 use App\Models\FieldJobStage;
 use App\Models\Invoice;
 use App\Models\Payroll;
@@ -10,6 +9,7 @@ use App\Models\PayrollPeriod;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -38,6 +38,22 @@ class ExpandedWorkflowTest extends TestCase
             ->assertSeeText('Username')
             ->assertSeeText('Foto KTP')
             ->assertDontSee('capture=', false);
+    }
+
+    public function test_expansion_migration_can_resume_without_duplicating_backfilled_data(): void
+    {
+        $counts = [
+            'quotation_locations' => DB::table('quotation_locations')->count(),
+            'invoice_locations' => DB::table('invoice_locations')->count(),
+            'field_job_sites' => DB::table('field_job_sites')->count(),
+        ];
+
+        $migration = require database_path('migrations/2026_08_25_000000_expand_documents_jobs_and_users.php');
+        $migration->up();
+
+        foreach ($counts as $table => $count) {
+            $this->assertSame($count, DB::table($table)->count());
+        }
     }
 
     public function test_invoice_supports_date_ranges_multiple_locations_and_direct_totals(): void
