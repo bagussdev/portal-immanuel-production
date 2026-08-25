@@ -44,7 +44,7 @@ class DocumentLocations
                 $qty = (float) ($row['qty'] ?? 0);
                 $length = filled($row['length'] ?? null) ? (float) $row['length'] : null;
                 $mode = ($row['pricing_mode'] ?? 'unit') === 'total' ? 'total' : 'unit';
-                $unitPrice = $mode === 'unit' ? DocumentTotals::money($row['unit_price'] ?? null) : 0;
+                $unitPrice = DocumentTotals::money($row['unit_price'] ?? null);
                 $lineTotal = $mode === 'total'
                     ? DocumentTotals::money($row['line_total'] ?? $row['total'] ?? null)
                     : (int) round($qty * (($length ?? 0) > 0 ? $length : 1) * $unitPrice);

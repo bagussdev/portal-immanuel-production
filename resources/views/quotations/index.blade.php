@@ -2,18 +2,8 @@
 <div class="ip-page">
     <header class="ip-page-header"><div><p class="ip-kicker">Penjualan</p><h1 class="ip-title">Quotation</h1><p class="ip-subtitle">Penawaran client dan status persetujuan.</p></div>@can('createquotation')<a href="{{ route('quotations.create') }}" class="ip-btn-primary">+ Buat quotation</a>@endcan</header>
     <div class="inline-flex w-fit rounded-xl border border-sky-100 bg-white p-1 dark:border-white/10 dark:bg-white/[.04]"><a href="{{ route('quotations.index') }}" class="rounded-lg px-4 py-2 text-sm font-extrabold {{ !$history ? 'bg-sky-700 text-white dark:bg-red-600' : 'text-slate-500' }}">Aktif</a><a href="{{ route('quotations.index',['history'=>1]) }}" class="rounded-lg px-4 py-2 text-sm font-extrabold {{ $history ? 'bg-sky-700 text-white dark:bg-red-600' : 'text-slate-500' }}">History</a></div>
-    <form class="ip-card flex flex-col gap-3 p-4 sm:flex-row"><input name="search" value="{{ $search }}" placeholder="Cari nomor, client, atau acara" class="ip-input flex-1"><select name="status" class="ip-input sm:w-52"><option value="">Semua status</option>@foreach(($history ? ['approved'=>'Disetujui','rejected'=>'Ditolak','cancelled'=>'Dibatalkan'] : ['draft'=>'Draft','sent'=>'Dikirim']) as $value=>$label)<option value="{{ $value }}" @selected($status===$value)>{{ $label }}</option>@endforeach</select>@if($history)<input type="hidden" name="history" value="1">@endif @if($sort)<input type="hidden" name="sort" value="{{ $sort }}"><input type="hidden" name="direction" value="{{ $direction }}">@endif<button class="ip-btn-dark">Terapkan filter</button></form>
-    <div class="ip-card p-3 md:hidden">
-        <p class="mb-2 text-[10px] font-extrabold uppercase tracking-[.16em] text-slate-400">Urutkan · klik lagi untuk membalik atau mereset</p>
-        <div class="grid grid-cols-3 gap-2">
-            <x-sort-link column="number" label="Nomor" :current="$sort" :direction="$direction" compact />
-            <x-sort-link column="client" label="Client" :current="$sort" :direction="$direction" compact />
-            <x-sort-link column="document_date" label="Quotation" :current="$sort" :direction="$direction" compact />
-            <x-sort-link column="event_date" label="Event" :current="$sort" :direction="$direction" compact />
-            <x-sort-link column="status" label="Status" :current="$sort" :direction="$direction" compact />
-            <x-sort-link column="total" label="Total" :current="$sort" :direction="$direction" compact />
-        </div>
-    </div>
+    <form class="ip-card flex flex-col gap-3 p-4 sm:flex-row"><input name="search" value="{{ $search }}" placeholder="Cari nomor, client, atau acara" class="ip-input flex-1"><select name="status" class="ip-input sm:w-52"><option value="">Semua status</option>@foreach(($history ? ['approved'=>'Disetujui','rejected'=>'Ditolak','cancelled'=>'Dibatalkan'] : ['draft'=>'Draft','sent'=>'Dikirim']) as $value=>$label)<option value="{{ $value }}" @selected($status===$value)>{{ $label }}</option>@endforeach</select>@if($history)<input type="hidden" name="history" value="1">@endif @if($order)<input type="hidden" name="order" value="{{ $order }}">@endif<button class="ip-btn-dark">Terapkan filter</button></form>
+    <x-order-filter :current="$order" />
     <div class="space-y-3 md:hidden">
         @forelse($quotations as $quotation)
             <x-responsive-disclosure
@@ -34,7 +24,7 @@
         @endforelse
     </div>
     <div class="ip-card">
-        <div class="ip-table-wrap hidden md:block"><table class="ip-table min-w-[1120px]"><thead><tr><th><x-sort-link column="number" label="Nomor" :current="$sort" :direction="$direction" /></th><th><x-sort-link column="client" label="Client" :current="$sort" :direction="$direction" /></th><th><x-sort-link column="event" label="Acara" :current="$sort" :direction="$direction" /></th><th><x-sort-link column="document_date" label="Tgl quotation" :current="$sort" :direction="$direction" /></th><th><x-sort-link column="event_date" label="Tgl event" :current="$sort" :direction="$direction" /></th><th><x-sort-link column="status" label="Status" :current="$sort" :direction="$direction" /></th><th class="text-right"><x-sort-link column="total" label="Total" :current="$sort" :direction="$direction" /></th><th class="text-right">Aksi</th></tr></thead><tbody>@forelse($quotations as $quotation)@include('quotations._rows',['quotations'=>collect([$quotation])])@empty<tr><td colspan="8" class="py-14 text-center text-slate-500">Belum ada quotation. Mulai dari penawaran pertama.</td></tr>@endforelse</tbody></table></div>
+        <div class="ip-table-wrap hidden md:block"><table class="ip-table min-w-[1120px]"><thead><tr><th>Nomor</th><th>Client</th><th>Acara</th><th>Tgl quotation</th><th>Tgl event</th><th>Status</th><th class="text-right">Total</th><th class="text-right">Aksi</th></tr></thead><tbody>@forelse($quotations as $quotation)@include('quotations._rows',['quotations'=>collect([$quotation])])@empty<tr><td colspan="8" class="py-14 text-center text-slate-500">Belum ada quotation. Mulai dari penawaran pertama.</td></tr>@endforelse</tbody></table></div>
         <div class="border-t border-slate-200 p-4 dark:border-white/10">{{ $quotations->links() }}</div>
     </div>
 </div>

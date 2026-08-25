@@ -56,11 +56,8 @@
                 <x-input-error :messages="$errors->get('client_name')" class="mt-2" />
             </label>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Nama acara<input name="event_name" value="{{ old('event_name', $document->event_name) }}" class="ip-input mt-1" placeholder="Nama acara"></label>
-            <fieldset class="rounded-xl border border-sky-100 bg-white p-3 md:col-span-2 dark:border-white/10 dark:bg-white/[.04]">
-                <legend class="px-1 text-xs font-extrabold text-slate-500">Tanggal acara</legend>
-                <div class="grid grid-cols-2 gap-2"><label class="text-[10px] font-bold text-slate-400">Mulai<input type="date" name="event_date" value="{{ $eventStart }}" class="ip-input mt-1 !py-2 text-xs"></label><label class="text-[10px] font-bold text-slate-400">Sampai<input type="date" name="event_end_date" value="{{ $eventEnd }}" min="{{ $eventStart }}" class="ip-input mt-1 !py-2 text-xs"></label></div>
-                <x-input-error :messages="$errors->get('event_date')" class="mt-2" /><x-input-error :messages="$errors->get('event_end_date')" class="mt-2" />
-            </fieldset>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Tanggal acara<input type="date" name="event_date" value="{{ $eventStart }}" class="ip-input mt-1"><x-input-error :messages="$errors->get('event_date')" class="mt-2" /></label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">Sampai (opsional)<input type="date" name="event_end_date" value="{{ $eventEnd }}" min="{{ $eventStart }}" class="ip-input mt-1"><x-input-error :messages="$errors->get('event_end_date')" class="mt-2" /></label>
         </div>
     </x-responsive-disclosure>
 
@@ -87,24 +84,28 @@
                     </div>
 
                     <div class="mt-5">
-                        <div class="mb-2 hidden grid-cols-[76px,minmax(220px,1fr),96px,140px,160px,120px,40px] gap-2 px-3 text-[10px] font-extrabold uppercase tracking-wide text-slate-400 lg:grid">
-                            <span>Qty</span><span>Nama item</span><span>Panjang</span><span>Mode</span><span>Harga</span><span class="text-right">Total</span><span></span>
-                        </div>
-                        <div class="space-y-2">
-                            <template x-for="(item, itemIndex) in location.items" :key="item.key">
-                                <div class="rounded-xl border border-sky-100 bg-white p-3 transition focus-within:border-sky-400 dark:border-white/10 dark:bg-[#10141d]">
-                                <div class="grid grid-cols-2 gap-2 lg:grid-cols-[76px,minmax(220px,1fr),96px,140px,160px,120px,40px] lg:items-end">
-                                    <label class="order-2 text-[10px] font-extrabold text-slate-400 lg:order-1"><span class="lg:hidden">Qty</span><input type="number" min="0.01" step="0.01" :name="`locations[${locationIndex}][items][${itemIndex}][qty]`" x-model.number="item.qty" class="ip-input mt-1 lg:mt-0"></label>
-                                    <label class="order-1 col-span-2 min-w-0 text-[10px] font-extrabold text-slate-400 lg:order-2 lg:col-span-1"><span class="lg:hidden">Nama item</span><span class="relative mt-1 block lg:mt-0"><input :name="`locations[${locationIndex}][items][${itemIndex}][item_name]`" x-model="item.item_name" @click="editItemName(item)" @keydown.enter.prevent="editItemName(item)" readonly required class="ip-input cursor-pointer truncate pr-10 font-bold text-slate-800 hover:border-sky-400 dark:text-white" placeholder="Klik untuk isi nama item"><span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sky-600 dark:text-red-400" aria-hidden="true">✎</span></span></label>
-                                    <label class="order-3 text-[10px] font-extrabold text-slate-400"><span class="lg:hidden">Panjang</span><input type="number" min="0" step="0.01" :name="`locations[${locationIndex}][items][${itemIndex}][length]`" x-model="item.length" class="ip-input mt-1 lg:mt-0" placeholder="Kosong"></label>
-                                    <label class="order-4 text-[10px] font-extrabold text-slate-400"><span class="lg:hidden">Mode</span><select :name="`locations[${locationIndex}][items][${itemIndex}][pricing_mode]`" x-model="item.pricing_mode" class="ip-input mt-1 lg:mt-0"><option value="unit">Harga satuan</option><option value="total">Total langsung</option></select></label>
-                                    <label class="order-5 text-[10px] font-extrabold text-slate-400"><span class="lg:hidden" x-text="item.pricing_mode === 'total' ? 'Total final' : 'Harga satuan'"></span><input :name="`locations[${locationIndex}][items][${itemIndex}][${item.pricing_mode === 'total' ? 'line_total' : 'unit_price'}]`" :value="item.pricing_mode === 'total' ? item.line_total : item.unit_price" @input="setMoney(item, item.pricing_mode === 'total' ? 'line_total' : 'unit_price', $event.target)" inputmode="numeric" class="ip-input mt-1 text-right lg:mt-0" placeholder="Rp"></label>
-                                    <div class="order-6 flex min-h-11 items-center justify-end rounded-xl bg-sky-50 px-3 text-right text-sm font-extrabold text-sky-700 dark:bg-white/[.04] dark:text-red-400" x-text="item.merge_price ? 'Digabung' : rupiah(lineTotal(item))"></div>
-                                    <button type="button" @click="removeItem(locationIndex,itemIndex)" class="order-7 col-span-2 flex h-10 items-center justify-center rounded-xl bg-red-50 font-bold text-red-600 hover:bg-red-100 lg:col-span-1 lg:h-11" aria-label="Hapus item">&times;</button>
+                        <div class="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:thin]">
+                            <div class="min-w-[500px] lg:min-w-0">
+                                <div class="mb-2 grid grid-cols-[48px,minmax(110px,1fr),58px,95px,95px,34px] gap-1.5 px-2 text-[9px] font-extrabold uppercase tracking-wide text-slate-400 lg:grid-cols-[72px,minmax(130px,1fr),88px,minmax(120px,145px),minmax(120px,145px),40px] lg:gap-2 lg:px-3 lg:text-[10px]">
+                                    <span>Qty</span><span>Nama item</span><span>Panjang</span><span class="text-right">Harga satuan</span><span class="text-right">Total</span><span></span>
                                 </div>
-                                <label x-show="itemIndex > 0" class="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-xs font-bold text-slate-500"><input type="checkbox" value="1" :name="`locations[${locationIndex}][items][${itemIndex}][merge_price]`" x-model="item.merge_price" class="rounded border-sky-200 text-sky-600"> Gabung harga dengan item sebelumnya</label>
+                                <div class="space-y-2">
+                                    <template x-for="(item, itemIndex) in location.items" :key="item.key">
+                                        <div class="rounded-xl border border-sky-100 bg-white p-2 transition focus-within:border-sky-400 lg:p-3 dark:border-white/10 dark:bg-[#10141d]">
+                                            <div class="grid grid-cols-[48px,minmax(110px,1fr),58px,95px,95px,34px] items-center gap-1.5 lg:grid-cols-[72px,minmax(130px,1fr),88px,minmax(120px,145px),minmax(120px,145px),40px] lg:gap-2">
+                                                <input type="number" min="0.01" step="0.01" :name="`locations[${locationIndex}][items][${itemIndex}][qty]`" x-model.number="item.qty" class="ip-input !px-2 !py-2 text-xs">
+                                                <span class="relative block min-w-0"><input :name="`locations[${locationIndex}][items][${itemIndex}][item_name]`" x-model="item.item_name" @click="editItemName(item)" @keydown.enter.prevent="editItemName(item)" readonly required class="ip-input cursor-pointer truncate !py-2 pl-2 pr-8 text-xs font-bold text-slate-800 hover:border-sky-400 dark:text-white" placeholder="Nama item"><span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-sky-600 dark:text-red-400" aria-hidden="true">✎</span></span>
+                                                <input type="number" min="0" step="0.01" :name="`locations[${locationIndex}][items][${itemIndex}][length]`" x-model="item.length" class="ip-input !px-2 !py-2 text-xs" placeholder="-">
+                                                <input type="hidden" :name="`locations[${locationIndex}][items][${itemIndex}][pricing_mode]`" :value="item.pricing_mode">
+                                                <input :name="`locations[${locationIndex}][items][${itemIndex}][unit_price]`" :value="money(item.unit_price)" @input="setUnitPrice(item, $event.target)" inputmode="numeric" class="ip-input !px-2 !py-2 text-right text-xs" placeholder="Rp">
+                                                <input :name="`locations[${locationIndex}][items][${itemIndex}][line_total]`" :value="displayLineTotal(item)" @input="setLineTotal(item, $event.target)" @focus="$event.target.select()" :disabled="item.merge_price" inputmode="numeric" class="ip-input !px-2 !py-2 text-right text-xs font-extrabold text-sky-700 disabled:bg-sky-50 disabled:text-slate-400 dark:text-red-400" :placeholder="item.merge_price ? 'Gabung' : 'Total'">
+                                                <button type="button" @click="removeItem(locationIndex,itemIndex)" class="flex h-9 items-center justify-center rounded-lg bg-red-50 font-bold text-red-600 hover:bg-red-100" aria-label="Hapus item">&times;</button>
+                                            </div>
+                                            <label x-show="itemIndex > 0" class="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-[11px] font-bold text-slate-500"><input type="checkbox" value="1" :name="`locations[${locationIndex}][items][${itemIndex}][merge_price]`" x-model="item.merge_price" class="rounded border-sky-200 text-sky-600"> Gabung harga dengan item sebelumnya</label>
+                                        </div>
+                                    </template>
                                 </div>
-                            </template>
+                            </div>
                         </div>
                         <button type="button" @click="addItem(locationIndex)" class="ip-btn-secondary mt-3 w-full sm:w-auto">+ Tambah item</button>
                     </div>
@@ -114,9 +115,9 @@
         </div>
     </section>
     <template x-teleport="body">
-        <div x-cloak x-show="itemModalOpen" @keydown.escape.window="closeItemName()" class="fixed inset-0 z-[100] flex items-end justify-center p-3 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="itemNameTitle">
+        <div x-cloak x-show="itemModalOpen" @keydown.escape.window="closeItemName()" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="itemNameTitle">
             <div x-show="itemModalOpen" x-transition.opacity class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" @click="closeItemName()"></div>
-            <div x-show="itemModalOpen" x-transition class="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/20 bg-white shadow-2xl dark:bg-[#11151e]">
+            <div x-show="itemModalOpen" x-transition class="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/20 bg-white shadow-2xl sm:rounded-3xl dark:bg-[#11151e]">
                 <div class="border-b border-sky-100 px-5 py-4 dark:border-white/10 sm:px-6">
                     <p class="ip-kicker">Rincian item</p>
                     <h2 id="itemNameTitle" class="mt-1 text-xl font-extrabold text-slate-950 dark:text-white">Nama item</h2>
@@ -173,8 +174,11 @@ function documentEditor(initialLocations, discountMode, taxMode) {
         saveItemName() { const value = this.draftItemName.replace(/\s+/g,' ').trim(); if (!value || !this.editingItem) return; this.editingItem.item_name = value; this.closeItemName() },
         validateItemNames() { const empty = this.locations.flatMap(location => location.items).find(item => !String(item.item_name || '').trim()); if (!empty) return true; this.editItemName(empty); return false },
         raw(value) { return Number(String(value ?? '').replace(/[^0-9]/g,'')) || 0 }, money(value) { return new Intl.NumberFormat('id-ID').format(this.raw(value)) }, rupiah(value) { return value > 0 ? `Rp ${this.money(value)}` : 'Rp 0' },
-        setMoney(item,key,input) { item[key] = this.money(input.value); input.value = item[key] },
-        lineTotal(item) { if (item.merge_price) return 0; if (item.pricing_mode === 'total') return this.raw(item.line_total); return (Number(item.qty)||0) * ((Number(item.length)||0) > 0 ? Number(item.length) : 1) * this.raw(item.unit_price) },
+        setUnitPrice(item,input) { item.unit_price = this.money(input.value); input.value = item.unit_price },
+        setLineTotal(item,input) { const value = String(input.value ?? '').replace(/[^0-9]/g,''); item.pricing_mode = value ? 'total' : 'unit'; item.line_total = value ? this.money(value) : ''; input.value = this.displayLineTotal(item) },
+        calculatedLineTotal(item) { return (Number(item.qty)||0) * ((Number(item.length)||0) > 0 ? Number(item.length) : 1) * this.raw(item.unit_price) },
+        displayLineTotal(item) { if (item.merge_price) return ''; const total = item.pricing_mode === 'total' ? this.raw(item.line_total) : this.calculatedLineTotal(item); return total > 0 ? this.money(total) : '' },
+        lineTotal(item) { if (item.merge_price) return 0; return item.pricing_mode === 'total' ? this.raw(item.line_total) : this.calculatedLineTotal(item) },
         subtotal() { return this.locations.reduce((sum,location) => sum + location.items.reduce((value,item) => value + this.lineTotal(item),0),0) },
         deduction(mode, percentRef, valueRef, base) { return mode === 'percent' ? Math.round(base * ((Number(percentRef?.value)||0)/100)) : this.raw(valueRef?.value) },
         grandTotal() { const subtotal=this.subtotal(); const discount=Math.min(this.deduction(this.discountMode,this.$refs.discountPercent,this.$refs.discountValue,subtotal),subtotal); const after=Math.max(subtotal-discount,0); return Math.max(after-Math.min(this.deduction(this.taxMode,this.$refs.taxPercent,this.$refs.taxValue,after),after),0) }

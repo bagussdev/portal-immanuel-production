@@ -139,7 +139,7 @@ class ExpandedWorkflowTest extends TestCase
                     'work_flow' => Invoice::FLOW_ONE_WAY,
                     'items' => [[
                         'item_name' => 'Paket dekorasi', 'qty' => 12,
-                        'pricing_mode' => 'total', 'line_total' => '3250000',
+                        'pricing_mode' => 'total', 'unit_price' => '300000', 'line_total' => '3250000',
                     ]],
                 ],
             ],
@@ -151,12 +151,16 @@ class ExpandedWorkflowTest extends TestCase
         $this->assertSame($start->copy()->addDay()->toDateString(), $invoice->event_end_date->toDateString());
         $this->assertTrue($invoice->locations->every(fn ($location) => $location->event_start_date->isSameDay($start)));
         $this->assertSame(7_250_000, (int) $invoice->fresh()->grand_total);
-        $this->assertSame('total', $invoice->locations()->where('name', 'Pantai Sanur')->firstOrFail()->items()->firstOrFail()->pricing_mode);
+        $directTotalItem = $invoice->locations()->where('name', 'Pantai Sanur')->firstOrFail()->items()->firstOrFail();
+        $this->assertSame('total', $directTotalItem->pricing_mode);
+        $this->assertSame(300_000, (int) $directTotalItem->unit_price);
+        $this->assertSame(3_250_000, (int) $directTotalItem->total);
 
         $invoice->load(['client', 'bankDetail', 'locations.items', 'items', 'payments']);
         $multiLocationHtml = view('invoices.pdf', compact('invoice'))->render();
         $this->assertSame(2, substr_count($multiLocationHtml, '<div class="location-head">'));
-        $this->assertSame(1, substr_count($multiLocationHtml, 'Bongkar:'));
+        $this->assertStringNotContainsString('Loading:', $multiLocationHtml);
+        $this->assertStringNotContainsString('Bongkar:', $multiLocationHtml);
         $this->assertStringNotContainsString('08:00', $multiLocationHtml);
         $this->assertStringNotContainsString('20:00', $multiLocationHtml);
         $this->assertStringNotContainsString('Acara:', $multiLocationHtml);
@@ -198,7 +202,7 @@ class ExpandedWorkflowTest extends TestCase
         $this->get(route('field-jobs.history'))->assertOk()->assertSeeText('Festival Multi Lokasi');
     }
 
-    public function test_document_and_schedule_lists_sort_all_records_and_use_compact_item_editor(): void
+    public function test_document_and_schedule_lists_use_simple_order_filters_and_compact_item_editor(): void
     {
         $admin = User::where('email', 'admin@immanuel.test')->firstOrFail();
         $client = Client::create(['name' => 'Client Pengujian Sort']);
@@ -230,17 +234,30 @@ class ExpandedWorkflowTest extends TestCase
             ]);
         }
 
-        $this->actingAs($admin)->get(route('invoices.index', ['sort' => 'event_date', 'direction' => 'asc']))
-            ->assertOk()->assertSeeInOrder(['Sort Event Lama', 'Sort Event Baru'])->assertSeeText('Tgl invoice');
-        $this->get(route('quotations.index', ['sort' => 'event_date', 'direction' => 'desc']))
-            ->assertOk()->assertSeeInOrder(['Sort Event Baru', 'Sort Event Lama'])->assertSeeText('Tgl quotation');
-        $this->get(route('field-jobs.index', ['sort' => 'event_date', 'direction' => 'asc']))
-            ->assertOk()->assertSeeInOrder(['Sort Event Lama', 'Sort Event Baru'])->assertSeeText('Urutkan jadwal');
+        $this->actingAs($admin)->get(route('invoices.index', ['order' => 'oldest']))
+            ->assertOk()->assertSeeInOrder(['Sort Event Lama', 'Sort Event Baru'])
+            ->assertSeeText('Terbaru')->assertSeeText('Terlama')->assertSeeText('Tgl invoice');
+        $this->get(route('invoices.index', ['order' => 'latest', 'search' => 'Sort Event']))
+            ->assertOk()->assertSee('href="'.route('invoices.index').'?'.http_build_query(['search' => 'Sort Event']).'"', false);
+        $this->get(route('quotations.index', ['order' => 'latest']))
+            ->assertOk()->assertSeeInOrder(['Sort Event Baru', 'Sort Event Lama'])
+            ->assertSeeText('Terbaru')->assertSeeText('Terlama')->assertSeeText('Tgl quotation');
+        $this->get(route('field-jobs.index', ['order' => 'oldest']))
+            ->assertOk()->assertSeeInOrder(['Sort Event Lama', 'Sort Event Baru'])
+            ->assertSeeText('Terbaru')->assertSeeText('Terlama');
         $this->get(route('invoices.create'))
             ->assertOk()
             ->assertSeeText('Simpan nama')
             ->assertSee('editItemName(item)', false)
+            ->assertSeeText('Harga satuan')
+            ->assertSeeText('Total')
+            ->assertDontSee('<span>Mode</span>', false)
+            ->assertSee('setLineTotal(item', false)
+            ->assertSee('min-w-[500px]', false)
+            ->assertSee('items-center justify-center p-4', false)
+            ->assertDontSee('items-end justify-center', false)
             ->assertSee('name="event_date"', false)
+            ->assertSee('name="event_end_date"', false)
             ->assertDontSee('event_start_date', false);
     }
 

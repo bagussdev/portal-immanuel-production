@@ -24,20 +24,9 @@ class QuotationController extends Controller
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
         $history = $request->boolean('history');
-        $sort = (string) $request->input('sort');
-        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
-        $sorts = [
-            'number' => 'quotation_number',
-            'client' => Client::select('name')->whereColumn('clients.id', 'quotations.client_id'),
-            'event' => 'event_name',
-            'document_date' => 'quotation_date',
-            'event_date' => 'event_date',
-            'status' => 'status',
-            'total' => 'grand_total',
-        ];
-        if (! array_key_exists($sort, $sorts)) {
-            $sort = '';
-        }
+        $order = in_array($request->input('order'), ['latest', 'oldest'], true)
+            ? (string) $request->input('order')
+            : '';
         $quotations = Quotation::with(['client', 'user', 'invoice'])
             ->when($search, fn ($q) => $q->where(fn ($qq) => $qq
                 ->where('quotation_number', 'like', "%{$search}%")
@@ -46,13 +35,13 @@ class QuotationController extends Controller
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when(! $status && $history, fn ($q) => $q->whereIn('status', [Quotation::STATUS_APPROVED, Quotation::STATUS_REJECTED, Quotation::STATUS_CANCELLED]))
             ->when(! $status && ! $history, fn ($q) => $q->whereIn('status', [Quotation::STATUS_DRAFT, Quotation::STATUS_SENT]))
-            ->when($sort, fn ($query) => $query->orderBy($sorts[$sort], $direction))
-            ->when(! $sort, fn ($query) => $query->latest())
-            ->orderByDesc('id')
+            ->when($order === 'latest', fn ($query) => $query->orderByRaw('COALESCE(quotation_date, created_at) DESC')->orderByDesc('id'))
+            ->when($order === 'oldest', fn ($query) => $query->orderByRaw('COALESCE(quotation_date, created_at) ASC')->orderBy('id'))
+            ->when(! $order, fn ($query) => $query->latest())
             ->paginate(min(max((int) $request->input('per_page', 10), 5), 100))
             ->withQueryString();
 
-        return view('quotations.index', compact('quotations', 'search', 'status', 'history', 'sort', 'direction'));
+        return view('quotations.index', compact('quotations', 'search', 'status', 'history', 'order'));
     }
 
     public function changes(Request $request)

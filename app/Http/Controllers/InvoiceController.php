@@ -26,22 +26,9 @@ class InvoiceController extends Controller
         $search = trim((string) $request->input('search'));
         $status = $request->input('status');
         $history = $request->boolean('history');
-        $sort = (string) $request->input('sort');
-        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
-        $sorts = [
-            'number' => 'invoice_number',
-            'client' => Client::select('name')->whereColumn('clients.id', 'invoices.client_id'),
-            'event' => 'event_name',
-            'document_date' => 'issue_date',
-            'event_date' => 'event_date',
-            'status' => 'status',
-            'total' => 'grand_total',
-            'paid' => 'total_paid',
-            'balance' => 'balance_due',
-        ];
-        if (! array_key_exists($sort, $sorts)) {
-            $sort = '';
-        }
+        $order = in_array($request->input('order'), ['latest', 'oldest'], true)
+            ? (string) $request->input('order')
+            : '';
         $invoices = Invoice::with(['client', 'creator', 'quotation'])
             ->when($search, fn ($q) => $q->where(fn ($qq) => $qq
                 ->where('invoice_number', 'like', "%{$search}%")
@@ -56,13 +43,13 @@ class InvoiceController extends Controller
                 $query->whereIn('status', [Invoice::STATUS_DRAFT, Invoice::STATUS_UNPAID, Invoice::STATUS_PARTIAL, Invoice::STATUS_OVERDUE])
                     ->orWhere(fn ($overpaid) => $overpaid->where('status', Invoice::STATUS_OVERPAID)->whereNull('resolved_at'));
             }))
-            ->when($sort, fn ($query) => $query->orderBy($sorts[$sort], $direction))
-            ->when(! $sort, fn ($query) => $query->latest())
-            ->orderByDesc('id')
+            ->when($order === 'latest', fn ($query) => $query->orderByRaw('COALESCE(issue_date, created_at) DESC')->orderByDesc('id'))
+            ->when($order === 'oldest', fn ($query) => $query->orderByRaw('COALESCE(issue_date, created_at) ASC')->orderBy('id'))
+            ->when(! $order, fn ($query) => $query->latest())
             ->paginate(min(max((int) $request->input('per_page', 10), 5), 100))
             ->withQueryString();
 
-        return view('invoices.index', compact('invoices', 'search', 'status', 'history', 'sort', 'direction'));
+        return view('invoices.index', compact('invoices', 'search', 'status', 'history', 'order'));
     }
 
     public function changes()

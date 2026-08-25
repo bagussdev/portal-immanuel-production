@@ -24,27 +24,11 @@
                     @endforeach
                 </select>
                 @if($history)<input type="hidden" name="history" value="1">@endif
-                @if($sort)<input type="hidden" name="sort" value="{{ $sort }}"><input type="hidden" name="direction" value="{{ $direction }}">@endif
+                @if($order)<input type="hidden" name="order" value="{{ $order }}">@endif
                 <button class="ip-btn-dark">Terapkan filter</button>
             </form>
 
-            <div class="ip-card p-3 sm:p-4">
-                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                        <p class="text-[10px] font-extrabold uppercase tracking-[.16em] text-slate-400">Urutkan jadwal</p>
-                        <p class="mt-1 text-xs text-slate-500">Klik lagi untuk membalik urutan, lalu klik ketiga untuk kembali ke default.</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-                        <x-sort-link column="number" label="Nomor" :current="$sort" :direction="$direction" compact />
-                        <x-sort-link column="client" label="Client" :current="$sort" :direction="$direction" compact />
-                        <x-sort-link column="event" label="Acara" :current="$sort" :direction="$direction" compact />
-                        <x-sort-link column="event_date" label="Event" :current="$sort" :direction="$direction" compact />
-                        <x-sort-link column="loading_date" label="Pasang" :current="$sort" :direction="$direction" compact />
-                        <x-sort-link column="teardown_date" label="Bongkar" :current="$sort" :direction="$direction" compact />
-                        <x-sort-link column="status" label="Status" :current="$sort" :direction="$direction" compact />
-                    </div>
-                </div>
-            </div>
+            <x-order-filter :current="$order" />
 
             <div class="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                 @forelse($jobs as $job)
