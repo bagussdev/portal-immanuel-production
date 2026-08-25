@@ -26,7 +26,7 @@
     @font-face { font-family:Poppins; font-weight:400; src:url("{{ storage_path('fonts/Poppins-Regular.ttf') }}") format('truetype'); }
     @font-face { font-family:Poppins; font-weight:600; src:url("{{ storage_path('fonts/Poppins-SemiBold.ttf') }}") format('truetype'); }
     @font-face { font-family:Poppins; font-weight:700; src:url("{{ storage_path('fonts/Poppins-Bold.ttf') }}") format('truetype'); }
-    * { box-sizing:border-box; } body { margin:0; font-family:Poppins, sans-serif; font-size:10px; color:#374151; line-height:1.45; }
+    * { box-sizing:border-box; } body { margin:0; font-family:Poppins, sans-serif; font-size:10px; color:#374151; line-height:1.35; }
     .header { height:28mm; margin-bottom:6mm; border-bottom:1.5px solid #334155; }
     .header table { width:100%; border-collapse:collapse; } .header td { vertical-align:top; } .logo { width:122px; } .company { text-align:right; line-height:1.55; }
     .company strong { display:block; color:#27303f; font-size:15px; } .muted { color:#64748b; }
@@ -35,13 +35,13 @@
     .info { width:100%; margin:0 0 14px; border-collapse:collapse; }
     .info > tbody > tr > td { padding:7px 8px; vertical-align:top; width:50%; } .info strong { color:#334155; }
     .info-lines { width:100%; border-collapse:collapse; background:transparent; } .info-lines td { width:auto; padding:2px 0; vertical-align:top; }
-    .info-lines td:first-child { width:90px; color:#64748b; }
-    .location { margin:0 0 14px; page-break-inside:auto; } .location-head { padding:8px 10px; background:#eaf4fb; border-left:4px solid #0284c7; page-break-after:avoid; }
-    .location-name { color:#0f172a; font-size:12px; font-weight:700; } .schedule { margin-top:3px; color:#64748b; font-size:9px; }
+    .info-lines td:first-child { width:90px; color:#64748b; font-weight:700; }
+    .location { margin:0 0 9px; page-break-inside:auto; } .location-head { padding:4px 7px; background:#eaf4fb; border-left:3px solid #0284c7; line-height:1.25; page-break-after:avoid; }
+    .location-name { color:#0f172a; font-size:10px; font-weight:700; } .schedule { margin-left:6px; color:#64748b; font-size:8px; }
     table.items { width:100%; border-collapse:collapse; page-break-inside:auto; border:1px solid #cbd5e1; }
     table.items thead { display:table-header-group; } table.items tr { page-break-inside:avoid; }
-    table.items th { padding:9px 6px; border:1px solid #cbd5e1; background:#3b4a60; color:#fff; font-size:8px; letter-spacing:.5px; text-transform:uppercase; }
-    table.items td { padding:7px 6px; border:1px solid #cbd5e1; vertical-align:top; } table.items tbody tr:nth-child(even) { background:#f8fafc; }
+    table.items th { padding:5px 5px; border:1px solid #cbd5e1; background:#3b4a60; color:#fff; font-size:8px; letter-spacing:.4px; text-transform:uppercase; }
+    table.items td { padding:4px 5px; border:1px solid #cbd5e1; vertical-align:top; line-height:1.3; } table.items tbody tr:nth-child(even) { background:#f8fafc; }
     .num,.qty,.size { text-align:center; } .price { text-align:right; white-space:nowrap; }
     .notes { margin:12px 0 0; padding:9px 11px; border:1px solid #cbd5e1; border-left:4px solid #94a3b8; background:#f8fafc; page-break-inside:avoid; }
     .final { width:100%; margin-top:14px; border-collapse:collapse; table-layout:fixed; page-break-inside:avoid; }
@@ -75,7 +75,7 @@
 @foreach($locations as $location)
     @php($showUnitPrice = $location->items->contains(fn($item) => (int)$item->unit_price > 0))
     <section class="location">
-        @if($multipleLocations)<div class="location-head"><div class="location-name">{{ $location->name ?: 'Lokasi belum ditentukan' }}</div>@unless($isInvoice)<div class="schedule">Loading: {{ optional($location->loading_date)->format('d-m-Y') ?: '-' }}@if($location->teardown_date) | Bongkar: {{ optional($location->teardown_date)->format('d-m-Y') }}@endif</div>@endunless</div>@endif
+        @if($multipleLocations)<div class="location-head"><span class="location-name">{{ $location->name ?: 'Lokasi belum ditentukan' }}</span>@unless($isInvoice)<span class="schedule">- Loading: {{ optional($location->loading_date)->format('d-m-Y') ?: '-' }}@if($location->teardown_date) | Bongkar: {{ optional($location->teardown_date)->format('d-m-Y') }}@endif</span>@endunless</div>@endif
         <table class="items"><thead><tr><th style="width:28px">No</th><th>Item</th><th style="width:48px">Qty</th><th style="width:55px">Size</th>@if($showUnitPrice)<th style="width:90px">Harga Satuan</th>@endif<th style="width:95px">Total</th></tr></thead><tbody>
             @foreach($location->items as $item)<tr><td class="num">{{ $loop->iteration }}</td><td>{{ $item->item_name }}</td><td class="qty">{{ rtrim(rtrim(number_format((float)$item->qty,2,',','.'),'0'),',') }}</td><td class="size">{{ filled($item->length) && (float)$item->length > 0 ? rtrim(rtrim(number_format((float)$item->length,2,',','.'),'0'),',') : '' }}</td>@if($showUnitPrice)<td class="price">{{ $money($item->unit_price) }}</td>@endif<td class="price"><strong>{{ $money($item->total) }}</strong></td></tr>@endforeach
         </tbody></table>

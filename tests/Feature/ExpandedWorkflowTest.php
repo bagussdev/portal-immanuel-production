@@ -157,6 +157,10 @@ class ExpandedWorkflowTest extends TestCase
         $this->assertSame(3_250_000, (int) $directTotalItem->total);
 
         $invoice->load(['client', 'bankDetail', 'locations.items', 'items', 'payments']);
+        $detailResponse = $this->get(route('invoices.show', $invoice))->assertOk();
+        $this->assertSame(2, substr_count($detailResponse->getContent(), 'data-location-disclosure'));
+        $detailResponse->assertSee('data-mobile-open="false"', false)
+            ->assertSee('whitespace-nowrap text-right font-extrabold tabular-nums', false);
         $multiLocationHtml = view('invoices.pdf', compact('invoice'))->render();
         $this->assertSame(2, substr_count($multiLocationHtml, '<div class="location-head">'));
         $this->assertStringNotContainsString('Loading:', $multiLocationHtml);
@@ -213,30 +217,37 @@ class ExpandedWorkflowTest extends TestCase
         $client = Client::create(['name' => 'Client Pengujian Sort']);
 
         foreach ([['Sort Event Lama', 3], ['Sort Event Baru', 20]] as [$event, $days]) {
+            $isOlderRecord = $event === 'Sort Event Lama';
+            $createdAt = now()->subDays($isOlderRecord ? 2 : 1);
             $invoice = Invoice::create([
                 'client_id' => $client->id,
                 'event_name' => $event,
                 'event_date' => today()->addDays($days),
+                'issue_date' => today()->addDays($isOlderRecord ? 60 : 1),
                 'status' => Invoice::STATUS_DRAFT,
                 'created_by' => $admin->id,
             ]);
-            Quotation::create([
+            $invoice->forceFill(['created_at' => $createdAt])->saveQuietly();
+            $quotation = Quotation::create([
                 'client_id' => $client->id,
                 'event_name' => $event,
                 'event_date' => today()->addDays($days),
-                'quotation_date' => today()->addDays($days),
+                'quotation_date' => today()->addDays($isOlderRecord ? 60 : 1),
                 'status' => Quotation::STATUS_DRAFT,
                 'user_id' => $admin->id,
             ]);
-            FieldJob::create([
+            $quotation->forceFill(['created_at' => $createdAt])->saveQuietly();
+            $fieldJob = FieldJob::create([
                 'invoice_id' => $invoice->id,
                 'job_number' => 'JOB/SORT/'.$days,
                 'client_name' => $client->name,
                 'event_name' => $event,
                 'event_date' => today()->addDays($days),
+                'loading_date' => today()->addDays($isOlderRecord ? 60 : 1),
                 'status' => FieldJob::STATUS_PENDING,
                 'created_by' => $admin->id,
             ]);
+            $fieldJob->forceFill(['created_at' => $createdAt])->saveQuietly();
         }
 
         $this->actingAs($admin)->get(route('invoices.index', ['order' => 'oldest']))
@@ -250,6 +261,8 @@ class ExpandedWorkflowTest extends TestCase
         $this->get(route('field-jobs.index', ['order' => 'oldest']))
             ->assertOk()->assertSeeInOrder(['Sort Event Lama', 'Sort Event Baru'])
             ->assertSeeText('Terbaru')->assertSeeText('Terlama');
+        $this->get(route('field-jobs.index', ['order' => 'latest']))
+            ->assertOk()->assertSeeInOrder(['Sort Event Baru', 'Sort Event Lama']);
         $this->get(route('invoices.create'))
             ->assertOk()
             ->assertSeeText('Simpan nama')
@@ -258,14 +271,16 @@ class ExpandedWorkflowTest extends TestCase
             ->assertSeeText('Total')
             ->assertDontSee('<span>Mode</span>', false)
             ->assertSee('setLineTotal(item', false)
-            ->assertSee('min-w-[500px]', false)
+            ->assertSee('min-w-[550px]', false)
             ->assertSee('items-center justify-center p-4', false)
             ->assertDontSee('items-end justify-center', false)
             ->assertSee('name="event_date"', false)
             ->assertSee('name="event_end_date"', false)
             ->assertSeeText('Terapkan ke semua lokasi')
+            ->assertSeeText('Jadwal event')
             ->assertSeeText('Pindahkan')
             ->assertSee('data-item-list', false)
+            ->assertSee('data-mobile-open="false"', false)
             ->assertSee('window.Sortable.create', false)
             ->assertDontSee('event_start_date', false);
     }

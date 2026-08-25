@@ -35,8 +35,8 @@ class QuotationController extends Controller
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when(! $status && $history, fn ($q) => $q->whereIn('status', [Quotation::STATUS_APPROVED, Quotation::STATUS_REJECTED, Quotation::STATUS_CANCELLED]))
             ->when(! $status && ! $history, fn ($q) => $q->whereIn('status', [Quotation::STATUS_DRAFT, Quotation::STATUS_SENT]))
-            ->when($order === 'latest', fn ($query) => $query->orderByRaw('COALESCE(quotation_date, created_at) DESC')->orderByDesc('id'))
-            ->when($order === 'oldest', fn ($query) => $query->orderByRaw('COALESCE(quotation_date, created_at) ASC')->orderBy('id'))
+            ->when($order === 'latest', fn ($query) => $query->orderByDesc('created_at')->orderByDesc('id'))
+            ->when($order === 'oldest', fn ($query) => $query->orderBy('created_at')->orderBy('id'))
             ->when(! $order, fn ($query) => $query->latest())
             ->paginate(min(max((int) $request->input('per_page', 10), 5), 100))
             ->withQueryString();

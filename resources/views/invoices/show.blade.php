@@ -59,15 +59,15 @@
             <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
                 <div class="ip-card p-4 sm:p-5">
                     <p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Total tagihan</p>
-                    <p class="mt-3 min-h-7 text-base font-extrabold text-slate-950 dark:text-white sm:text-xl">{{ $rupiahOrBlank($invoice->grand_total) }}</p>
+                    <p class="mt-3 min-h-7 whitespace-nowrap text-base font-extrabold tabular-nums text-slate-950 dark:text-white sm:text-xl">{{ $rupiahOrBlank($invoice->grand_total) }}</p>
                 </div>
                 <div class="ip-card p-4 sm:p-5">
                     <p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Sudah dibayar</p>
-                    <p class="mt-3 min-h-7 text-base font-extrabold text-emerald-600 dark:text-emerald-400 sm:text-xl">{{ $rupiahOrBlank($invoice->total_paid) }}</p>
+                    <p class="mt-3 min-h-7 whitespace-nowrap text-base font-extrabold tabular-nums text-emerald-600 dark:text-emerald-400 sm:text-xl">{{ $rupiahOrBlank($invoice->total_paid) }}</p>
                 </div>
                 <div class="ip-card border-rose-100 bg-rose-50/70 p-4 dark:border-red-500/20 dark:bg-red-950/20 sm:p-5">
                     <p class="text-[11px] font-extrabold uppercase tracking-wider text-rose-500 dark:text-red-400">Sisa tagihan</p>
-                    <p class="mt-3 min-h-7 text-base font-extrabold text-rose-700 dark:text-red-300 sm:text-xl">{{ $rupiahOrBlank($invoice->balance_due) }}</p>
+                    <p class="mt-3 min-h-7 whitespace-nowrap text-base font-extrabold tabular-nums text-rose-700 dark:text-red-300 sm:text-xl">{{ $rupiahOrBlank($invoice->balance_due) }}</p>
                 </div>
                 <div class="ip-card p-4 sm:p-5">
                     <p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Jatuh tempo</p>
@@ -107,10 +107,10 @@
                 <aside class="rounded-2xl bg-sky-950 p-5 text-white shadow-xl dark:bg-[#0b0c0f]">
                     <p class="text-[11px] font-extrabold uppercase tracking-[.18em] text-sky-300 dark:text-red-400">Perhitungan</p>
                     <dl class="mt-5 space-y-3 text-sm">
-                        <div class="flex justify-between text-slate-400"><dt>Subtotal</dt><dd class="font-bold text-white">{{ $rupiahOrBlank($invoice->subtotal) }}</dd></div>
-                        @if ((int) $invoice->discount_value > 0)<div class="flex justify-between text-slate-400"><dt>Diskon @if ($invoice->discount_percent !== null) ({{ $invoice->discount_percent }}%) @endif</dt><dd class="font-bold text-sky-300 dark:text-red-300">- {{ $rupiahOrBlank($invoice->discount_value) }}</dd></div>@endif
-                        @if ((int) $invoice->tax_value > 0)<div class="flex justify-between text-slate-400"><dt>Potongan pajak @if ($invoice->tax_percent !== null) ({{ $invoice->tax_percent }}%) @endif</dt><dd class="font-bold text-sky-300 dark:text-red-300">- {{ $rupiahOrBlank($invoice->tax_value) }}</dd></div>@endif
-                        <div class="flex justify-between border-t border-white/10 pt-4"><dt class="font-bold">Total</dt><dd class="text-xl font-extrabold">{{ $rupiahOrBlank($invoice->grand_total) }}</dd></div>
+                        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 text-slate-400"><dt>Subtotal</dt><dd class="whitespace-nowrap text-right font-bold tabular-nums text-white">{{ $rupiahOrBlank($invoice->subtotal) }}</dd></div>
+                        @if ((int) $invoice->discount_value > 0)<div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 text-slate-400"><dt>Diskon @if ($invoice->discount_percent !== null) ({{ $invoice->discount_percent }}%) @endif</dt><dd class="whitespace-nowrap text-right font-bold tabular-nums text-sky-300 dark:text-red-300">- {{ $rupiahOrBlank($invoice->discount_value) }}</dd></div>@endif
+                        @if ((int) $invoice->tax_value > 0)<div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 text-slate-400"><dt>Potongan pajak @if ($invoice->tax_percent !== null) ({{ $invoice->tax_percent }}%) @endif</dt><dd class="whitespace-nowrap text-right font-bold tabular-nums text-sky-300 dark:text-red-300">- {{ $rupiahOrBlank($invoice->tax_value) }}</dd></div>@endif
+                        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 border-t border-white/10 pt-4"><dt class="font-bold">Total</dt><dd class="whitespace-nowrap text-right text-lg font-extrabold tabular-nums sm:text-xl">{{ $rupiahOrBlank($invoice->grand_total) }}</dd></div>
                     </dl>
                     <div class="mt-6 space-y-2 border-t border-white/10 pt-5 text-xs text-slate-400">
                         <p><strong class="text-slate-200">Loading:</strong> {{ optional($invoice->loading_date)->translatedFormat('d M Y H:i') ?: '-' }}</p>

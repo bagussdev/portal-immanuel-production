@@ -48,10 +48,8 @@ class FieldJobController extends Controller
             ], true), fn ($query) => $query->where('status', $status))
             ->when(! $status && $history, fn ($query) => $query->whereIn('status', [FieldJob::STATUS_COMPLETED, FieldJob::STATUS_CANCELLED]))
             ->when(! $status && ! $history, fn ($query) => $query->whereIn('status', [FieldJob::STATUS_PENDING, FieldJob::STATUS_IN_PROGRESS]))
-            ->when($order === 'latest', fn ($query) => $query
-                ->orderByRaw('COALESCE(loading_date, event_date, created_at) DESC')->orderByDesc('id'))
-            ->when($order === 'oldest', fn ($query) => $query
-                ->orderByRaw('COALESCE(loading_date, event_date, created_at) ASC')->orderBy('id'))
+            ->when($order === 'latest', fn ($query) => $query->orderByDesc('created_at')->orderByDesc('id'))
+            ->when($order === 'oldest', fn ($query) => $query->orderBy('created_at')->orderBy('id'))
             ->when(! $order && ! $history, fn ($query) => $query
                 ->orderByRaw('COALESCE(loading_date, event_date) IS NULL')
                 ->orderByRaw('COALESCE(loading_date, event_date) ASC'))

@@ -43,8 +43,8 @@ class InvoiceController extends Controller
                 $query->whereIn('status', [Invoice::STATUS_DRAFT, Invoice::STATUS_UNPAID, Invoice::STATUS_PARTIAL, Invoice::STATUS_OVERDUE])
                     ->orWhere(fn ($overpaid) => $overpaid->where('status', Invoice::STATUS_OVERPAID)->whereNull('resolved_at'));
             }))
-            ->when($order === 'latest', fn ($query) => $query->orderByRaw('COALESCE(issue_date, created_at) DESC')->orderByDesc('id'))
-            ->when($order === 'oldest', fn ($query) => $query->orderByRaw('COALESCE(issue_date, created_at) ASC')->orderBy('id'))
+            ->when($order === 'latest', fn ($query) => $query->orderByDesc('created_at')->orderByDesc('id'))
+            ->when($order === 'oldest', fn ($query) => $query->orderBy('created_at')->orderBy('id'))
             ->when(! $order, fn ($query) => $query->latest())
             ->paginate(min(max((int) $request->input('per_page', 10), 5), 100))
             ->withQueryString();

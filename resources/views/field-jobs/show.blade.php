@@ -30,7 +30,7 @@
                 </div>
             </header>
 
-            <x-responsive-disclosure kicker="Informasi event" title="Jadwal & lokasi" description="Ringkasan waktu pelaksanaan dan catatan pekerjaan." :mobile-open="true">
+            <x-responsive-disclosure kicker="Informasi event" title="Jadwal & lokasi" description="Ringkasan waktu pelaksanaan dan catatan pekerjaan." :mobile-open="false">
                 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Hari acara</p><p class="mt-1 font-bold text-slate-900 dark:text-white">{{ optional($fieldJob->event_date)->translatedFormat('d F Y') ?: '-' }}</p></div>
                     <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Loading</p><p class="mt-1 font-bold text-slate-900 dark:text-white">{{ optional($fieldJob->loading_date)->translatedFormat('d M Y, H:i') ?: '-' }}</p></div>

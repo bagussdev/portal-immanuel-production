@@ -79,43 +79,42 @@
                             <button type="button" x-show="locations.length > 1" @click="removeLocation(locationIndex)" class="text-xs font-extrabold text-red-600">Hapus lokasi</button>
                         </div>
                     </div>
-                    <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        <label class="text-sm font-semibold text-slate-600 dark:text-slate-300">Lokasi<input :name="`locations[${locationIndex}][name]`" x-model="location.name" class="ip-input mt-1" placeholder="Nama lokasi"></label>
-                        <label class="text-sm font-semibold text-slate-600 dark:text-slate-300">Loading<input type="datetime-local" :name="`locations[${locationIndex}][loading_date]`" x-model="location.loading_date" @input="locationFieldChanged(locationIndex, 'loading_date', $event.target.value)" class="ip-input mt-1"></label>
-                        <label class="text-sm font-semibold text-slate-600 dark:text-slate-300" x-show="location.work_flow === 'install_teardown'">Bongkar<input type="datetime-local" :name="`locations[${locationIndex}][teardown_date]`" x-model="location.teardown_date" @input="locationFieldChanged(locationIndex, 'teardown_date', $event.target.value)" class="ip-input mt-1"></label>
-                    </div>
-                    <p class="mt-4 text-xs font-extrabold uppercase tracking-wide text-slate-500">Tipe pekerjaan</p>
-                    <div class="mt-2 grid gap-2 sm:grid-cols-3">
-                        <template x-for="option in flowOptions" :key="option.value"><label class="cursor-pointer"><input type="radio" :name="`locations[${locationIndex}][work_flow]`" :value="option.value" x-model="location.work_flow" @change="locationFieldChanged(locationIndex, 'work_flow', option.value)" class="peer sr-only"><span class="block rounded-xl border border-sky-100 bg-white px-3 py-2 text-xs font-bold text-slate-600 peer-checked:border-sky-500 peer-checked:bg-sky-50 peer-checked:text-sky-800 dark:border-white/10 dark:bg-white/[.04] dark:text-slate-300" x-text="option.label"></span></label></template>
-                    </div>
-                    <label x-show="locationIndex === 0 && locations.length > 1" class="mt-3 flex cursor-pointer items-start gap-2 rounded-xl border border-sky-100 bg-white/80 px-3 py-2.5 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[.04] dark:text-slate-300">
-                        <input type="checkbox" x-model="applyAllLocations" @change="applyAllLocations = $event.target.checked; applyMasterToFollowers()" class="mt-0.5 rounded border-sky-200 text-sky-600">
-                        <span><span class="block text-slate-800 dark:text-white">Terapkan ke semua lokasi</span><span class="mt-0.5 block font-medium text-slate-500">Loading, bongkar, dan tipe pekerjaan mengikuti Lokasi 1. Pengaturan khusus tidak ditimpa.</span></span>
-                    </label>
+                    <label class="mt-4 block text-sm font-semibold text-slate-600 dark:text-slate-300">Lokasi<input :name="`locations[${locationIndex}][name]`" x-model="location.name" class="ip-input mt-1" placeholder="Nama lokasi"></label>
+                    <details data-responsive-disclosure data-mobile-open="false" class="ip-disclosure mt-4 overflow-hidden rounded-xl border border-sky-100 bg-white/70 dark:border-white/10 dark:bg-white/[.025]">
+                        <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500">
+                            <span><span class="block text-xs font-extrabold text-slate-800 dark:text-white">Jadwal event</span><span class="mt-0.5 block text-[11px] font-medium text-slate-500">Loading, bongkar, dan tipe pekerjaan</span></span>
+                            <svg class="ip-disclosure-chevron h-5 w-5 shrink-0 text-sky-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
+                        </summary>
+                        <div class="border-t border-sky-100 p-3 dark:border-white/10">
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <label class="text-sm font-semibold text-slate-600 dark:text-slate-300">Loading<input type="datetime-local" :name="`locations[${locationIndex}][loading_date]`" x-model="location.loading_date" @input="locationFieldChanged(locationIndex, 'loading_date', $event.target.value)" class="ip-input mt-1"></label>
+                                <label class="text-sm font-semibold text-slate-600 dark:text-slate-300" x-show="location.work_flow === 'install_teardown'">Bongkar<input type="datetime-local" :name="`locations[${locationIndex}][teardown_date]`" x-model="location.teardown_date" @input="locationFieldChanged(locationIndex, 'teardown_date', $event.target.value)" class="ip-input mt-1"></label>
+                            </div>
+                            <p class="mt-4 text-xs font-extrabold uppercase tracking-wide text-slate-500">Tipe pekerjaan</p>
+                            <div class="mt-2 grid gap-2 sm:grid-cols-3">
+                                <template x-for="option in flowOptions" :key="option.value"><label class="cursor-pointer"><input type="radio" :name="`locations[${locationIndex}][work_flow]`" :value="option.value" x-model="location.work_flow" @change="locationFieldChanged(locationIndex, 'work_flow', option.value)" class="peer sr-only"><span class="block rounded-xl border border-sky-100 bg-white px-3 py-2 text-xs font-bold text-slate-600 peer-checked:border-sky-500 peer-checked:bg-sky-50 peer-checked:text-sky-800 dark:border-white/10 dark:bg-white/[.04] dark:text-slate-300" x-text="option.label"></span></label></template>
+                            </div>
+                            <label x-show="locationIndex === 0 && locations.length > 1" class="mt-3 flex cursor-pointer items-start gap-2 rounded-xl border border-sky-100 bg-white/80 px-3 py-2.5 text-xs font-bold text-slate-600 dark:border-white/10 dark:bg-white/[.04] dark:text-slate-300">
+                                <input type="checkbox" x-model="applyAllLocations" @change="applyAllLocations = $event.target.checked; applyMasterToFollowers()" class="mt-0.5 rounded border-sky-200 text-sky-600">
+                                <span><span class="block text-slate-800 dark:text-white">Terapkan ke semua lokasi</span><span class="mt-0.5 block font-medium text-slate-500">Loading, bongkar, dan tipe pekerjaan mengikuti Lokasi 1. Pengaturan khusus tidak ditimpa.</span></span>
+                            </label>
+                        </div>
+                    </details>
 
                     <div class="mt-5">
                         <div class="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:thin]">
-                            <div class="min-w-[500px] lg:min-w-0">
-                                <div class="mb-2 grid grid-cols-[48px,minmax(110px,1fr),58px,95px,95px,34px] gap-1.5 px-2 text-[9px] font-extrabold uppercase tracking-wide text-slate-400 lg:grid-cols-[72px,minmax(130px,1fr),88px,minmax(120px,145px),minmax(120px,145px),40px] lg:gap-2 lg:px-3 lg:text-[10px]">
-                                    <span>Qty</span><span>Nama item</span><span>Panjang</span><span class="text-right">Harga satuan</span><span class="text-right">Total</span><span></span>
+                            <div class="min-w-[550px] lg:min-w-0">
+                                <div class="mb-2 grid grid-cols-[52px,48px,minmax(110px,1fr),58px,95px,95px,34px] gap-1.5 px-2 text-[9px] font-extrabold uppercase tracking-wide text-slate-400 lg:grid-cols-[60px,72px,minmax(130px,1fr),88px,minmax(120px,145px),minmax(120px,145px),40px] lg:gap-2 lg:px-3 lg:text-[10px]">
+                                    <span>No</span><span>Qty</span><span>Nama item</span><span>Panjang</span><span class="text-right">Harga satuan</span><span class="text-right">Total</span><span></span>
                                 </div>
                                 <div class="min-h-16 space-y-2 rounded-xl transition" data-item-list :data-location-key="location.key">
                                     <template x-for="(item, itemIndex) in location.items" :key="item.key">
                                         <div :data-item-key="item.key" class="rounded-xl border border-sky-100 bg-white p-2 transition focus-within:border-sky-400 lg:p-3 dark:border-white/10 dark:bg-[#10141d]">
-                                            <div class="mb-2 flex items-center justify-between gap-2">
-                                                <div class="flex items-center gap-2">
-                                                    <button type="button" class="item-drag-handle flex h-8 w-9 touch-none cursor-grab items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-lg font-black leading-none text-sky-700 active:cursor-grabbing dark:border-white/10 dark:bg-white/[.05] dark:text-sky-300" aria-label="Geser item" title="Tahan lalu geser">⠿</button>
-                                                    <span class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400" x-text="`Item ${itemIndex + 1}`"></span>
+                                            <div class="grid grid-cols-[52px,48px,minmax(110px,1fr),58px,95px,95px,34px] items-center gap-1.5 lg:grid-cols-[60px,72px,minmax(130px,1fr),88px,minmax(120px,145px),minmax(120px,145px),40px] lg:gap-2">
+                                                <div class="flex items-center gap-1">
+                                                    <span class="w-4 text-center text-[10px] font-extrabold text-slate-400" x-text="itemIndex + 1"></span>
+                                                    <button type="button" class="item-drag-handle flex h-9 w-8 touch-none cursor-grab items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-base font-black leading-none text-sky-700 active:cursor-grabbing dark:border-white/10 dark:bg-white/[.05] dark:text-sky-300" aria-label="Geser item" title="Tahan lalu geser">⠿</button>
                                                 </div>
-                                                <label x-show="locations.length > 1" class="flex items-center gap-2 text-[10px] font-bold text-slate-500">
-                                                    <span class="hidden sm:inline">Pindahkan</span>
-                                                    <select @change="moveItem(locationIndex, itemIndex, Number($event.target.value)); $event.target.value = ''" class="rounded-lg border-sky-100 bg-white py-1.5 pl-2 pr-7 text-[11px] font-bold dark:border-white/10 dark:bg-[#10141d]">
-                                                        <option value="">Pilih lokasi</option>
-                                                        <template x-for="(target, targetIndex) in locations" :key="target.key"><option :value="targetIndex" :disabled="targetIndex === locationIndex" x-text="`Lokasi ${targetIndex + 1}${target.name ? ' - ' + target.name : ''}`"></option></template>
-                                                    </select>
-                                                </label>
-                                            </div>
-                                            <div class="grid grid-cols-[48px,minmax(110px,1fr),58px,95px,95px,34px] items-center gap-1.5 lg:grid-cols-[72px,minmax(130px,1fr),88px,minmax(120px,145px),minmax(120px,145px),40px] lg:gap-2">
                                                 <input type="number" min="0.01" step="0.01" :name="`locations[${locationIndex}][items][${itemIndex}][qty]`" x-model.number="item.qty" class="ip-input !px-2 !py-2 text-xs">
                                                 <span class="relative block min-w-0"><input :name="`locations[${locationIndex}][items][${itemIndex}][item_name]`" x-model="item.item_name" @click="editItemName(item)" @keydown.enter.prevent="editItemName(item)" readonly required class="ip-input cursor-pointer truncate !py-2 pl-2 pr-8 text-xs font-bold text-slate-800 hover:border-sky-400 dark:text-white" placeholder="Nama item"><span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-sky-600 dark:text-red-400" aria-hidden="true">✎</span></span>
                                                 <input type="number" min="0" step="0.01" :name="`locations[${locationIndex}][items][${itemIndex}][length]`" x-model="item.length" class="ip-input !px-2 !py-2 text-xs" placeholder="-">
@@ -124,7 +123,16 @@
                                                 <input :name="`locations[${locationIndex}][items][${itemIndex}][line_total]`" :value="displayLineTotal(item)" @input="setLineTotal(item, $event.target)" @focus="$event.target.select()" :disabled="item.merge_price" inputmode="numeric" class="ip-input !px-2 !py-2 text-right text-xs font-extrabold text-sky-700 disabled:bg-sky-50 disabled:text-slate-400 dark:text-red-400" :placeholder="item.merge_price ? 'Gabung' : 'Total'">
                                                 <button type="button" @click="removeItem(locationIndex,itemIndex)" :disabled="totalItemCount() <= 1" class="flex h-9 items-center justify-center rounded-lg bg-red-50 font-bold text-red-600 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Hapus item">&times;</button>
                                             </div>
-                                            <label x-show="itemIndex > 0" class="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-[11px] font-bold text-slate-500"><input type="checkbox" value="1" :name="`locations[${locationIndex}][items][${itemIndex}][merge_price]`" x-model="item.merge_price" class="rounded border-sky-200 text-sky-600"> Gabung harga dengan item sebelumnya</label>
+                                            <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+                                                <label x-show="itemIndex > 0" class="inline-flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-[11px] font-bold text-slate-500"><input type="checkbox" value="1" :name="`locations[${locationIndex}][items][${itemIndex}][merge_price]`" x-model="item.merge_price" class="rounded border-sky-200 text-sky-600"> Gabung harga dengan item sebelumnya</label>
+                                                <label x-show="locations.length > 1" class="ml-auto flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                                                    <span class="hidden sm:inline">Pindahkan</span>
+                                                    <select @change="if ($event.target.value !== '') moveItem(locationIndex, itemIndex, Number($event.target.value)); $event.target.value = ''" class="rounded-lg border-sky-100 bg-white py-1.5 pl-2 pr-7 text-[11px] font-bold dark:border-white/10 dark:bg-[#10141d]">
+                                                        <option value="">Pilih lokasi</option>
+                                                        <template x-for="(target, targetIndex) in locations" :key="target.key"><option :value="targetIndex" :disabled="targetIndex === locationIndex" x-text="`Lokasi ${targetIndex + 1}${target.name ? ' - ' + target.name : ''}`"></option></template>
+                                                    </select>
+                                                </label>
+                                            </div>
                                         </div>
                                     </template>
                                     <div x-show="location.items.length === 0" class="flex min-h-16 items-center justify-center rounded-xl border border-dashed border-sky-200 px-4 text-center text-xs font-bold text-slate-400 dark:border-white/15">Tarik item ke lokasi ini atau tambahkan item baru.</div>
@@ -200,12 +208,12 @@ function documentEditor(initialLocations, discountMode, taxMode) {
         locations: normalized.length ? normalized : [site()], discountMode, taxMode,
         itemModalOpen: false, editingItem: null, draftItemName: '', applyAllLocations: false,
         flowOptions: [{value:'install_teardown',label:'Pasang & Bongkar'},{value:'install_only',label:'Pasang saja'},{value:'one_way',label:'Sekali jalan'}],
-        init() { this.$nextTick(() => this.setupSortables()) },
+        init() { this.$nextTick(() => { this.setupSortables(); window.setupResponsiveDisclosures?.(this.$root) }) },
         addLocation() {
             const location = site();
             if (this.applyAllLocations) this.copyMasterTo(location);
             this.locations.push(location);
-            this.$nextTick(() => this.setupSortables());
+            this.$nextTick(() => { this.setupSortables(); window.setupResponsiveDisclosures?.(this.$root) });
         },
         removeLocation(index) { if (this.locations.length > 1) this.locations.splice(index,1) },
         addItem(index) { this.locations[index].items.push(row()) },
