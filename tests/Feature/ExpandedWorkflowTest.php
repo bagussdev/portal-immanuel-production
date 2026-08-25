@@ -119,8 +119,9 @@ class ExpandedWorkflowTest extends TestCase
         $this->assertSame([1284, 810], array_slice(getimagesize(Storage::disk('local')->path($crew->ktp_photo_path)), 0, 2));
 
         $pdfHtml = view('users.pdf', ['users' => collect([$crew->fresh()->load('role')])])->render();
-        $this->assertStringContainsString('width:32mm;height:32mm', $pdfHtml);
-        $this->assertStringContainsString('width:70mm;height:44.2mm', $pdfHtml);
+        $this->assertStringContainsString('width:176mm;margin:0 auto', $pdfHtml);
+        $this->assertStringContainsString('width:30mm;height:30mm', $pdfHtml);
+        $this->assertStringContainsString('width:62mm;height:39.1mm', $pdfHtml);
         $this->assertStringNotContainsString('@'.$crew->username, $pdfHtml);
         $this->assertStringNotContainsString('<span class="role"', $pdfHtml);
     }
