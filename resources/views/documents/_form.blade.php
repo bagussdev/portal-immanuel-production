@@ -181,7 +181,20 @@
             <div class="space-y-4">
                 <div class="flex justify-between text-sm"><span>Subtotal</span><strong x-text="rupiah(subtotal())"></strong></div>
                 @foreach([['discount','Diskon',$discountAmount,$document->discount_percent],['tax','Potongan pajak',$document->tax_value,$document->tax_percent]] as [$prefix,$label,$amount,$percent])
-                    <div class="grid grid-cols-[1fr,80px,1fr] items-end gap-2"><label class="text-xs font-semibold text-slate-500">{{ $label }}<select name="{{ $prefix }}_mode" x-model="{{ $prefix }}Mode" class="ip-input mt-1 !py-2"><option value="percent">Persen</option><option value="amount">Nominal</option></select></label><input type="number" step="0.01" min="0" max="100" name="{{ $prefix }}_percent" value="{{ old($prefix.'_percent',$percent) }}" x-ref="{{ $prefix }}Percent" :disabled="{{ $prefix }}Mode !== 'percent'" class="ip-input !py-2 text-right" placeholder="%"><input name="{{ $prefix }}_value" value="{{ old($prefix.'_value',$amount ?: '') }}" x-ref="{{ $prefix }}Value" :disabled="{{ $prefix }}Mode !== 'amount'" @input="$event.target.value = money($event.target.value)" class="ip-input !py-2 text-right" placeholder="Rp"></div>
+                    <div class="grid gap-2 rounded-xl border border-sky-100 p-3 dark:border-white/10 sm:grid-cols-[minmax(120px,1fr)_90px_minmax(140px,1fr)] sm:items-end">
+                        <label class="text-xs font-semibold text-slate-500">{{ $label }}
+                            <select name="{{ $prefix }}_mode" x-model="{{ $prefix }}Mode" class="ip-input mt-1 !py-2">
+                                <option value="percent">Persen</option>
+                                <option value="amount">Nominal</option>
+                            </select>
+                        </label>
+                        <label class="text-xs font-semibold text-slate-500" x-show="{{ $prefix }}Mode === 'percent'">Persen
+                            <input type="number" step="0.01" min="0" max="100" name="{{ $prefix }}_percent" value="{{ old($prefix.'_percent',$percent) }}" x-ref="{{ $prefix }}Percent" :disabled="{{ $prefix }}Mode !== 'percent'" class="ip-input mt-1 !py-2 text-right" placeholder="%">
+                        </label>
+                        <label class="text-xs font-semibold text-slate-500" x-show="{{ $prefix }}Mode === 'amount'">Nominal
+                            <input name="{{ $prefix }}_value" value="{{ old($prefix.'_value',$amount ?: '') }}" x-ref="{{ $prefix }}Value" :disabled="{{ $prefix }}Mode !== 'amount'" x-init="$el.value = money($el.value)" @input="$event.target.value = money($event.target.value)" class="ip-input mt-1 !py-2 text-right" placeholder="Rp 0">
+                        </label>
+                    </div>
                 @endforeach
                 <div class="flex items-end justify-between border-t border-sky-100 pt-4"><span class="text-sm font-semibold text-slate-500">Total tagihan</span><strong class="text-2xl font-extrabold text-sky-700 dark:text-red-400" x-text="rupiah(grandTotal())"></strong></div>
             </div>

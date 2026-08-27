@@ -90,7 +90,11 @@
     @if($discount > 0)<tr><td>Diskon</td><td>:</td><td>- {{ $money($discount) }}</td></tr>@endif
     @if((int)$document->tax_value > 0)<tr><td>Potongan pajak</td><td>:</td><td>- {{ $money($document->tax_value) }}</td></tr>@endif
     <tr class="grand"><td>{{ $isInvoice ? 'Total Tagihan' : 'Total Penawaran' }}</td><td>:</td><td>{{ $money($document->grand_total) }}</td></tr>
-    @if($isInvoice && (int)$document->total_paid > 0)<tr><td>Dibayar</td><td>:</td><td>{{ $money($document->total_paid) }}</td></tr>@endif
+    @if($isInvoice)
+        @foreach($document->payments->whereNull('voided_at')->sortBy('paid_at') as $payment)
+            <tr><td>{{ $payment->reference ?: 'Pembayaran '.$loop->iteration }}</td><td>:</td><td>{{ $money($payment->amount) }}</td></tr>
+        @endforeach
+    @endif
     @if($isInvoice)<tr class="balance"><td>Sisa Tagihan</td><td>:</td><td>{{ $money($document->balance_due) ?: 'Lunas' }}</td></tr>@endif
 </table></div></td></tr></table>
 <div class="footer">Terima kasih atas kepercayaan Anda.<br><strong>IMMANUEL PRODUCTION {{ date('Y') }}</strong> | admin@immanuelproduction.com | 0818550837 | www.immanuelproduction.com</div>

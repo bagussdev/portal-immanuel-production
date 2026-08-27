@@ -83,7 +83,7 @@
 
                     <div class="flex flex-row flex-wrap sm:flex-nowrap items-stretch gap-2">
                         <input name="search" id="searchInput" type="text" value="{{ $search }}"
-                            placeholder="Cari invoice no / client / notes / user"
+                            placeholder="Cari invoice / client / referensi / catatan / user"
                             class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600
                             bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
 
@@ -145,6 +145,7 @@
                                     class="sort-icon"></span></th>
                             <th class="px-4 py-2 cursor-pointer sort" data-sort="amount">Amount <span
                                     class="sort-icon"></span></th>
+                            <th class="px-4 py-2">Referensi</th>
                             <th class="px-4 py-2">Notes</th>
                             <th class="px-4 py-2 cursor-pointer sort" data-sort="received_by">Created By
                                 <span class="sort-icon"></span>
@@ -182,15 +183,15 @@
                                 </td>
                                 <td class="px-4 py-2 client_name">{{ trim($it['client_name'] ?? '') ?: '—' }}</td>
                                 <td class="px-4 py-2">
-                                    <span class="amount" data-sort="{{ $amountRaw }}">{{ $percent }}% —
-                                        {{ number_format($amountRaw, 0, ',', '.') }}</span>
+                                    <span class="amount" data-sort="{{ $amountRaw }}">{{ $percent }}% — Rp {{ number_format($amountRaw, 0, ',', '.') }}</span>
                                 </td>
+                                <td class="px-4 py-2 font-semibold text-gray-800 dark:text-gray-200">{{ trim($it['reference'] ?? '') ?: '—' }}</td>
                                 <td class="px-4 py-2">{{ trim($it['notes'] ?? '') ?: '—' }}</td>
                                 <td class="px-4 py-2 received_by">{{ trim($it['received_by'] ?? '') ?: '—' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+                                <td colspan="8" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
                                     Belum ada data</td>
                             </tr>
                         @endforelse

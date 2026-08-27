@@ -7,8 +7,8 @@
     <div class="space-y-3 md:hidden">
         @forelse($quotations as $quotation)
             <x-responsive-disclosure
-                title="{{ $quotation->quotation_number }}"
-                description="{{ $quotation->client?->name ?: 'Client manual' }} · {{ $quotation->event_name ?: 'Tanpa nama acara' }}"
+                :title="$quotation->quotation_number"
+                :description="($quotation->client?->name ?: 'Client manual').' · '.($quotation->event_name ?: 'Tanpa nama acara')"
                 content-class="p-4"
             >
                 <x-slot name="meta"><x-status-badge :status="$quotation->status" /></x-slot>
@@ -18,6 +18,11 @@
                     <div class="rounded-xl bg-sky-50 p-3 text-right dark:bg-white/[.04]"><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Total</dt><dd class="mt-1 font-extrabold text-slate-900 dark:text-white">Rp {{ number_format($quotation->grand_total,0,',','.') }}</dd></div>
                 </dl>
                 <a href="{{ route('quotations.show',$quotation) }}" class="ip-btn-primary mt-4 w-full">Lihat detail quotation</a>
+                @can('deletequotation')
+                    @if(! $quotation->invoice)
+                        <form method="POST" action="{{ route('quotations.destroy', $quotation) }}" onsubmit="return confirmAndLoad('Hapus quotation ini dari daftar?')" class="mt-2">@csrf @method('DELETE')<button class="ip-btn-danger w-full">Hapus</button></form>
+                    @endif
+                @endcan
             </x-responsive-disclosure>
         @empty
             <div class="ip-card p-10 text-center text-sm text-slate-500">Belum ada quotation. Mulai dari penawaran pertama.</div>

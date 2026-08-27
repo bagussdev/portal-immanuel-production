@@ -63,6 +63,7 @@ class PaymentController extends Controller
             $q->where(function ($qq) use ($like) {
                 $qq->where('i.invoice_number', 'like', $like)
                     ->orWhere('c.name', 'like', $like)
+                    ->orWhere('p.reference', 'like', $like)
                     ->orWhere('p.notes', 'like', $like)
                     ->orWhere('u.name', 'like', $like);
             });
@@ -111,6 +112,7 @@ class PaymentController extends Controller
                 'p.paid_at',
                 'p.percent',
                 'p.amount',
+                'p.reference',
                 'p.notes',
                 'i.grand_total',
                 'i.invoice_number',
@@ -126,6 +128,7 @@ class PaymentController extends Controller
                 'p.paid_at',
                 'p.percent',
                 'p.amount',
+                'p.reference',
                 'p.notes',
                 'i.grand_total',
                 'i.invoice_number',
@@ -148,6 +151,7 @@ class PaymentController extends Controller
                     ? round(((int) $r->amount / (int) $r->grand_total) * 100, 2)
                     : null,
                 'amount' => (int) $r->amount,
+                'reference' => (string) ($r->reference ?? ''),
                 'notes' => (string) ($r->notes ?? ''),
                 'received_by' => (string) ($r->received_by ?? ''),
             ];

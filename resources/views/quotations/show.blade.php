@@ -70,13 +70,18 @@
                 </aside>
             </div>
 
-            @if (! $quotation->invoice && ! in_array($quotation->status, ['approved', 'cancelled']))
+            @if (! $quotation->invoice)
                 <div class="flex flex-wrap justify-end gap-3">
-                    @can('editquotation')
-                        <form method="POST" action="{{ route('quotations.cancel', $quotation) }}" onsubmit="return confirmAndLoad('Batalkan quotation ini?')">@csrf<button class="ip-btn-danger">Batalkan</button></form>
-                    @endcan
-                    @can('approvequotation')
-                        <form method="POST" action="{{ route('quotations.acc', $quotation) }}" onsubmit="return confirmAndLoad('Setujui quotation dan buat invoice draft otomatis?')">@csrf<button class="ip-btn min-h-10 bg-emerald-600 text-white hover:bg-emerald-700">Setujui & buat invoice draft</button></form>
+                    @if (! in_array($quotation->status, ['approved', 'cancelled']))
+                        @can('editquotation')
+                            <form method="POST" action="{{ route('quotations.cancel', $quotation) }}" onsubmit="return confirmAndLoad('Batalkan quotation ini?')">@csrf<button class="ip-btn-danger">Batalkan</button></form>
+                        @endcan
+                        @can('approvequotation')
+                            <form method="POST" action="{{ route('quotations.acc', $quotation) }}" onsubmit="return confirmAndLoad('Setujui quotation dan buat invoice draft otomatis?')">@csrf<button class="ip-btn min-h-10 bg-emerald-600 text-white hover:bg-emerald-700">Setujui & buat invoice draft</button></form>
+                        @endcan
+                    @endif
+                    @can('deletequotation')
+                        <form method="POST" action="{{ route('quotations.destroy', $quotation) }}" onsubmit="return confirmAndLoad('Hapus quotation ini dari daftar?')">@csrf @method('DELETE')<button class="ip-btn-danger">Hapus quotation</button></form>
                     @endcan
                 </div>
             @endif

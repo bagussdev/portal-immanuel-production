@@ -238,15 +238,33 @@ function setupResponsiveDisclosures(root = document) {
     root.querySelectorAll('[data-responsive-disclosure]').forEach(setupResponsiveDisclosure);
 }
 
+function setupMoneyInputs(root = document) {
+    root.querySelectorAll('[data-money-input]').forEach((input) => {
+        if (input.dataset.moneyReady === 'true') return;
+        input.dataset.moneyReady = 'true';
+
+        const format = () => {
+            const digits = String(input.value || '').replace(/\D/g, '');
+            input.value = digits ? new Intl.NumberFormat('id-ID').format(Number(digits)) : '';
+        };
+
+        input.addEventListener('input', format);
+        format();
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     setupResponsiveTables();
     setupResponsiveDisclosures();
+    setupMoneyInputs();
 });
 window.addEventListener('load', () => {
     setupResponsiveTables();
     setupResponsiveDisclosures();
+    setupMoneyInputs();
 });
 window.setupResponsiveTables = setupResponsiveTables;
 window.setupResponsiveDisclosures = setupResponsiveDisclosures;
+window.setupMoneyInputs = setupMoneyInputs;
 
 Alpine.start();

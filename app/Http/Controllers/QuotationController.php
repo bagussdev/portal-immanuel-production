@@ -27,10 +27,12 @@ class QuotationController extends Controller
         $order = in_array($request->input('order'), ['latest', 'oldest'], true)
             ? (string) $request->input('order')
             : '';
-        $quotations = Quotation::with(['client', 'user', 'invoice'])
+        $quotations = Quotation::with(['client', 'user', 'invoice', 'locations'])
             ->when($search, fn ($q) => $q->where(fn ($qq) => $qq
                 ->where('quotation_number', 'like', "%{$search}%")
                 ->orWhere('event_name', 'like', "%{$search}%")
+                ->orWhere('location_event', 'like', "%{$search}%")
+                ->orWhereHas('locations', fn ($locations) => $locations->where('name', 'like', "%{$search}%"))
                 ->orWhereHas('client', fn ($client) => $client->where('name', 'like', "%{$search}%"))))
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when(! $status && $history, fn ($q) => $q->whereIn('status', [Quotation::STATUS_APPROVED, Quotation::STATUS_REJECTED, Quotation::STATUS_CANCELLED]))
@@ -55,7 +57,7 @@ class QuotationController extends Controller
     {
         $this->authorize('quotationmenu');
         $ids = array_filter(array_map('intval', (array) $request->input('ids', [])));
-        $quotations = Quotation::with(['client', 'user', 'invoice'])->whereIn('id', $ids)->latest()->get();
+        $quotations = Quotation::with(['client', 'user', 'invoice', 'locations'])->whereIn('id', $ids)->latest()->get();
 
         return view('quotations._rows', compact('quotations'));
     }

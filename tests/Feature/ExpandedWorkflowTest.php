@@ -486,4 +486,59 @@ class ExpandedWorkflowTest extends TestCase
         $this->assertSame(3, $period->payrolls()->where('status', Payroll::STATUS_PAID)->count());
         $this->assertSame(3, $period->payrolls()->where('paid_by', $master->id)->count());
     }
+
+    public function test_invoice_discount_location_and_payment_references_are_rendered_correctly(): void
+    {
+        $admin = User::where('email', 'admin@immanuel.test')->firstOrFail();
+        $this->actingAs($admin)->post(route('invoices.store'), [
+            'client_name' => 'Client Uji',
+            'event_name' => 'Sound & Lighting',
+            'event_date' => today()->addWeek()->toDateString(),
+            'discount_mode' => 'amount',
+            'discount_value' => '18.200.000',
+            'tax_mode' => 'amount',
+            'locations' => [[
+                'name' => 'Ubud & Sanur',
+                'work_flow' => Invoice::FLOW_ONE_WAY,
+                'items' => [[
+                    'item_name' => 'Paket produksi',
+                    'qty' => 1,
+                    'pricing_mode' => 'total',
+                    'line_total' => '21.200.000',
+                ]],
+            ]],
+        ])->assertRedirect();
+
+        $invoice = Invoice::latest('id')->firstOrFail();
+        $this->assertSame(18_200_000, (int) $invoice->discount_value);
+        $this->assertSame(3_000_000, (int) $invoice->grand_total);
+
+        $index = $this->get(route('invoices.index'))->assertOk();
+        $index->assertSeeText('Ubud & Sanur')
+            ->assertSee(route('invoices.destroy', $invoice), false);
+        $this->assertStringNotContainsString('&amp;amp;', $index->getContent());
+
+        $this->post(route('invoices.issue', $invoice), [
+            'issue_date' => today()->toDateString(),
+            'due_date' => today()->addMonth()->toDateString(),
+        ])->assertRedirect();
+        $this->post(route('invoices.payments.store', $invoice), [
+            'paid_at' => today()->toDateString(),
+            'amount' => '1.000.000',
+            'method' => 'Transfer',
+            'reference' => 'DP 1',
+        ])->assertRedirect();
+
+        $invoice->refresh()->load(['client', 'bankDetail', 'locations.items', 'items', 'payments']);
+        $this->get(route('invoices.index'))->assertOk()
+            ->assertSeeText('DP 1')
+            ->assertSeeText('Rp 1.000.000');
+        $this->get(route('payments.index', ['search' => 'DP 1']))->assertOk()
+            ->assertSeeText('DP 1')
+            ->assertSeeText('Rp 1.000.000');
+
+        $pdfHtml = view('invoices.pdf', compact('invoice'))->render();
+        $this->assertStringContainsString('DP 1', $pdfHtml);
+        $this->assertStringNotContainsString('<td>Dibayar</td>', $pdfHtml);
+    }
 }

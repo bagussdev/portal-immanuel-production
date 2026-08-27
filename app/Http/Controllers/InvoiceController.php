@@ -29,10 +29,15 @@ class InvoiceController extends Controller
         $order = in_array($request->input('order'), ['latest', 'oldest'], true)
             ? (string) $request->input('order')
             : '';
-        $invoices = Invoice::with(['client', 'creator', 'quotation'])
+        $invoices = Invoice::with([
+            'client', 'creator', 'quotation', 'locations',
+            'payments' => fn ($query) => $query->whereNull('voided_at')->orderBy('paid_at')->orderBy('id'),
+        ])
             ->when($search, fn ($q) => $q->where(fn ($qq) => $qq
                 ->where('invoice_number', 'like', "%{$search}%")
                 ->orWhere('event_name', 'like', "%{$search}%")
+                ->orWhere('location_event', 'like', "%{$search}%")
+                ->orWhereHas('locations', fn ($locations) => $locations->where('name', 'like', "%{$search}%"))
                 ->orWhereHas('client', fn ($client) => $client->where('name', 'like', "%{$search}%"))))
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when(! $status && $history, fn ($q) => $q->where(function ($query) {
@@ -63,7 +68,10 @@ class InvoiceController extends Controller
     {
         $this->authorize('invoicemenu');
         $ids = array_filter(array_map('intval', (array) $request->input('ids', [])));
-        $invoices = Invoice::with(['client', 'creator', 'quotation'])->whereIn('id', $ids)->latest()->get();
+        $invoices = Invoice::with([
+            'client', 'creator', 'quotation', 'locations',
+            'payments' => fn ($query) => $query->whereNull('voided_at')->orderBy('paid_at')->orderBy('id'),
+        ])->whereIn('id', $ids)->latest()->get();
 
         return view('invoices._rows', compact('invoices'));
     }

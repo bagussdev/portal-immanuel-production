@@ -211,7 +211,7 @@
                         <form method="POST" enctype="multipart/form-data" action="{{ route('invoices.payments.store', $invoice) }}" class="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
                             @csrf
                             <label class="text-xs font-bold text-emerald-900 dark:text-emerald-100">Tanggal<input type="date" name="paid_at" value="{{ today()->format('Y-m-d') }}" required class="ip-input mt-1"></label>
-                            <label class="text-xs font-bold text-emerald-900 dark:text-emerald-100">Nominal<input name="amount" required inputmode="numeric" class="ip-input mt-1" placeholder="Rp 0"></label>
+                            <label class="text-xs font-bold text-emerald-900 dark:text-emerald-100">Nominal<input name="amount" required inputmode="numeric" data-money-input class="ip-input mt-1" placeholder="Rp 0"></label>
                             <label class="text-xs font-bold text-emerald-900 dark:text-emerald-100">Metode<select name="method" class="ip-input mt-1"><option>Transfer</option><option>Tunai</option><option>Giro</option><option>Lainnya</option></select></label>
                             <label class="text-xs font-bold text-emerald-900 dark:text-emerald-100">Referensi<input name="reference" class="ip-input mt-1"></label>
                             <label class="text-xs font-bold text-emerald-900 dark:text-emerald-100">Bukti<input type="file" name="attachment" accept=".jpg,.jpeg,.png,.pdf" class="mt-2 block w-full text-xs"></label>
@@ -221,16 +221,27 @@
                 @endcan
             @endif
 
-            @if ($invoice->status !== 'void')
-                @can('voidinvoice')
+            <div class="flex flex-wrap justify-end gap-3">
+                @if ($invoice->status !== 'void')
+                    @can('voidinvoice')
                     <form method="POST" action="{{ route('invoices.void', $invoice) }}" class="flex justify-end" onsubmit="const r=prompt('Alasan VOID invoice:');if(!r)return false;this.querySelector('[name=reason]').value=r">
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="reason">
                         <button class="ip-btn-danger">Void invoice</button>
                     </form>
+                    @endcan
+                @endif
+                @can('deleteinvoice')
+                    @if (in_array($invoice->status, ['draft', 'void']))
+                        <form method="POST" action="{{ route('invoices.destroy', $invoice) }}" onsubmit="return confirmAndLoad('Hapus invoice ini dari daftar?')">
+                            @csrf
+                            @method('DELETE')
+                            <button class="ip-btn-danger">Hapus invoice</button>
+                        </form>
+                    @endif
                 @endcan
-            @endif
+            </div>
         </div>
     </x-dashboard.sidebar>
 </x-app-layout>
