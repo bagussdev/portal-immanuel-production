@@ -10,6 +10,7 @@ use App\Models\Payroll;
 use App\Models\PayrollPeriod;
 use App\Models\Quotation;
 use App\Models\User;
+use App\Services\ApproveQuotation;
 use App\Services\FieldJobSynchronizer;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -504,7 +505,7 @@ class ExpandedWorkflowTest extends TestCase
                     'item_name' => 'Paket produksi Ubud',
                     'qty' => 1,
                     'pricing_mode' => 'total',
-                    'line_total' => '21.200.000',
+                    'line_total' => '3.000.000',
                 ]],
             ], [
                 'name' => 'Sanur',
@@ -513,7 +514,7 @@ class ExpandedWorkflowTest extends TestCase
                     'item_name' => 'Paket produksi Sanur',
                     'qty' => 1,
                     'pricing_mode' => 'total',
-                    'line_total' => '69.000.000',
+                    'line_total' => '87.200.000',
                 ]],
             ]],
         ];
@@ -564,5 +565,29 @@ class ExpandedWorkflowTest extends TestCase
         $this->assertStringContainsString('Rp 18.200.000', $pdfHtml);
         $this->assertStringContainsString('Rp 72.000.000', $pdfHtml);
         $this->assertStringNotContainsString('<td>Dibayar</td>', $pdfHtml);
+    }
+
+    public function test_nominal_discount_is_not_clamped_while_quotation_items_are_being_converted(): void
+    {
+        $admin = User::where('email', 'admin@immanuel.test')->firstOrFail();
+        $quotation = Quotation::create([
+            'client_id' => Client::create(['name' => 'Client Konversi'])->id,
+            'user_id' => $admin->id,
+            'quotation_date' => today(),
+            'status' => Quotation::STATUS_SENT,
+            'subtotal' => 90_200_000,
+            'discount' => 18_200_000,
+            'grand_total' => 72_000_000,
+        ]);
+        $quotation->items()->createMany([
+            ['item_name' => 'Item awal', 'qty' => 1, 'pricing_mode' => 'total', 'unit_price' => 0, 'total' => 3_000_000],
+            ['item_name' => 'Item lanjutan', 'qty' => 1, 'pricing_mode' => 'total', 'unit_price' => 0, 'total' => 87_200_000],
+        ]);
+
+        $invoice = app(ApproveQuotation::class)->handle($quotation, $admin->id)->fresh();
+
+        $this->assertSame(90_200_000, (int) $invoice->subtotal);
+        $this->assertSame(18_200_000, (int) $invoice->discount_value);
+        $this->assertSame(72_000_000, (int) $invoice->grand_total);
     }
 }

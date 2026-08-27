@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Quotation;
 use Illuminate\Support\Facades\DB;
 
@@ -56,26 +57,28 @@ class ApproveQuotation
                     'work_flow' => Invoice::FLOW_INSTALL_TEARDOWN, 'sort_order' => 0, 'items' => $quotation->items,
                 ]]);
 
-            foreach ($locations as $sourceLocation) {
-                $invoiceLocation = $invoice->locations()->create([
-                    'quotation_location_id' => $sourceLocation->id,
-                    'name' => $sourceLocation->name,
-                    'event_start_date' => $sourceLocation->event_start_date,
-                    'event_end_date' => $sourceLocation->event_end_date,
-                    'loading_date' => $sourceLocation->loading_date,
-                    'teardown_date' => $sourceLocation->teardown_date,
-                    'work_flow' => $sourceLocation->work_flow ?: Invoice::FLOW_INSTALL_TEARDOWN,
-                    'sort_order' => $sourceLocation->sort_order,
-                ]);
-                foreach ($sourceLocation->items as $item) {
-                    $invoiceLocation->items()->create([
-                        'invoice_id' => $invoice->id,
-                        'qty' => $item->qty, 'item_name' => $item->item_name, 'length' => $item->length,
-                        'pricing_mode' => $item->pricing_mode, 'unit_price' => $item->unit_price,
-                        'total' => $item->total, 'price_group' => $item->price_group,
+            InvoiceItem::withoutEvents(function () use ($locations, $invoice): void {
+                foreach ($locations as $sourceLocation) {
+                    $invoiceLocation = $invoice->locations()->create([
+                        'quotation_location_id' => $sourceLocation->id,
+                        'name' => $sourceLocation->name,
+                        'event_start_date' => $sourceLocation->event_start_date,
+                        'event_end_date' => $sourceLocation->event_end_date,
+                        'loading_date' => $sourceLocation->loading_date,
+                        'teardown_date' => $sourceLocation->teardown_date,
+                        'work_flow' => $sourceLocation->work_flow ?: Invoice::FLOW_INSTALL_TEARDOWN,
+                        'sort_order' => $sourceLocation->sort_order,
                     ]);
+                    foreach ($sourceLocation->items as $item) {
+                        $invoiceLocation->items()->create([
+                            'invoice_id' => $invoice->id,
+                            'qty' => $item->qty, 'item_name' => $item->item_name, 'length' => $item->length,
+                            'pricing_mode' => $item->pricing_mode, 'unit_price' => $item->unit_price,
+                            'total' => $item->total, 'price_group' => $item->price_group,
+                        ]);
+                    }
                 }
-            }
+            });
 
             $invoice->recalcTotalsAndStatus();
             AuditTrail::record('quotation.approved', $quotation, [], ['invoice_id' => $invoice->id]);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BankDetail;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Services\AuditTrail;
 use App\Services\DocumentLocations;
@@ -408,13 +409,15 @@ class InvoiceController extends Controller
 
     private function saveLocations(Invoice $invoice, array $locations): void
     {
-        foreach ($locations as $data) {
-            $items = $data['items'];
-            unset($data['items']);
-            $location = $invoice->locations()->create($data);
-            $items = array_map(fn (array $item) => $item + ['invoice_id' => $invoice->id], $items);
-            $location->items()->createMany($items);
-        }
+        InvoiceItem::withoutEvents(function () use ($invoice, $locations): void {
+            foreach ($locations as $data) {
+                $items = $data['items'];
+                unset($data['items']);
+                $location = $invoice->locations()->create($data);
+                $items = array_map(fn (array $item) => $item + ['invoice_id' => $invoice->id], $items);
+                $location->items()->createMany($items);
+            }
+        });
     }
 
     private function resolveClientId(string $name): int
