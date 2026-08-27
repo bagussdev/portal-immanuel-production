@@ -11,7 +11,7 @@
             @endphp
             <x-responsive-disclosure
                 :title="$invoice->invoice_number ?: 'DRAFT #'.$invoice->id"
-                :description="($invoice->client?->name ?: 'Client manual').' · '.($invoice->event_name ?: 'Tanpa nama acara')"
+                :description="($invoice->client?->name ?: 'Client manual').' · '.$locationLabel"
                 content-class="p-4"
             >
                 <x-slot name="meta"><x-status-badge :status="$invoice->status" /></x-slot>

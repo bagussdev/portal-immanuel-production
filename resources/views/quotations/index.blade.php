@@ -6,9 +6,12 @@
     <x-order-filter :current="$order" />
     <div class="space-y-3 md:hidden">
         @forelse($quotations as $quotation)
+            @php
+                $locationLabel = $quotation->locations->pluck('name')->filter()->unique()->implode(', ') ?: ($quotation->location_event ?: 'Tanpa lokasi');
+            @endphp
             <x-responsive-disclosure
                 :title="$quotation->quotation_number"
-                :description="($quotation->client?->name ?: 'Client manual').' · '.($quotation->event_name ?: 'Tanpa nama acara')"
+                :description="($quotation->client?->name ?: 'Client manual').' · '.$locationLabel"
                 content-class="p-4"
             >
                 <x-slot name="meta"><x-status-badge :status="$quotation->status" /></x-slot>

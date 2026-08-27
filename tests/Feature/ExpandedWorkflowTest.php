@@ -515,6 +515,7 @@ class ExpandedWorkflowTest extends TestCase
 
         $index = $this->get(route('invoices.index'))->assertOk();
         $index->assertSeeText('Ubud & Sanur')
+            ->assertSeeText('Client Uji · Ubud & Sanur')
             ->assertSee(route('invoices.destroy', $invoice), false);
         $this->assertStringNotContainsString('&amp;amp;', $index->getContent());
 
