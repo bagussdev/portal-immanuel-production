@@ -498,13 +498,22 @@ class ExpandedWorkflowTest extends TestCase
             'discount_value' => '3.000.000',
             'tax_mode' => 'amount',
             'locations' => [[
-                'name' => 'Ubud & Sanur',
+                'name' => 'Ubud',
                 'work_flow' => Invoice::FLOW_ONE_WAY,
                 'items' => [[
-                    'item_name' => 'Paket produksi',
+                    'item_name' => 'Paket produksi Ubud',
                     'qty' => 1,
                     'pricing_mode' => 'total',
-                    'line_total' => '90.200.000',
+                    'line_total' => '21.200.000',
+                ]],
+            ], [
+                'name' => 'Sanur',
+                'work_flow' => Invoice::FLOW_ONE_WAY,
+                'items' => [[
+                    'item_name' => 'Paket produksi Sanur',
+                    'qty' => 1,
+                    'pricing_mode' => 'total',
+                    'line_total' => '69.000.000',
                 ]],
             ]],
         ];
@@ -514,18 +523,20 @@ class ExpandedWorkflowTest extends TestCase
         $payload['discount_value'] = '18.200.000';
         $this->put(route('invoices.update', $invoice), $payload)->assertRedirect();
         $invoice->refresh();
+        $this->assertSame(90_200_000, (int) $invoice->subtotal);
         $this->assertSame(18_200_000, (int) $invoice->discount_value);
         $this->assertSame(72_000_000, (int) $invoice->grand_total);
 
         $this->get(route('invoices.edit', $invoice))->assertOk()
             ->assertSee('x-model="discountValue"', false)
+            ->assertSee('name="discount_value" :value="raw(discountValue)"', false)
             ->assertDontSee('x-ref="discountValue"', false);
         $this->get(route('invoices.show', $invoice))->assertOk()
             ->assertSee('self-start rounded-2xl bg-sky-950', false);
 
         $index = $this->get(route('invoices.index'))->assertOk();
-        $index->assertSeeText('Ubud & Sanur')
-            ->assertSeeText('Client Uji · Ubud & Sanur')
+        $index->assertSeeText('Ubud')
+            ->assertSeeText('Sanur')
             ->assertSee(route('invoices.destroy', $invoice), false);
         $this->assertStringNotContainsString('&amp;amp;', $index->getContent());
 

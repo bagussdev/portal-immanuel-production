@@ -197,7 +197,10 @@
                             </select>
                         </label>
                         <input type="number" step="0.01" min="0" max="100" name="{{ $prefix }}_percent" x-model="{{ $prefix }}Percent" :disabled="{{ $prefix }}Mode !== 'percent'" class="ip-input !py-2 text-right disabled:bg-slate-50 disabled:text-slate-300 dark:disabled:bg-white/[.03]" placeholder="%">
-                        <input name="{{ $prefix }}_value" x-model="{{ $prefix }}Value" :disabled="{{ $prefix }}Mode !== 'amount'" @input="$event.target.value = {{ $prefix }}Value = money($event.target.value)" inputmode="numeric" class="ip-input !py-2 text-right disabled:bg-slate-50 disabled:text-slate-300 dark:disabled:bg-white/[.03]" placeholder="Rp 0">
+                        <span class="block min-w-0">
+                            <input type="hidden" name="{{ $prefix }}_value" :value="raw({{ $prefix }}Value)" :disabled="{{ $prefix }}Mode !== 'amount'">
+                            <input x-model="{{ $prefix }}Value" :disabled="{{ $prefix }}Mode !== 'amount'" @input="$event.target.value = {{ $prefix }}Value = money($event.target.value)" inputmode="numeric" class="ip-input !py-2 text-right disabled:bg-slate-50 disabled:text-slate-300 dark:disabled:bg-white/[.03]" placeholder="Rp 0" aria-label="{{ $label }} nominal">
+                        </span>
                     </div>
                 @endforeach
                 <div class="flex items-end justify-between border-t border-sky-100 pt-4"><span class="text-sm font-semibold text-slate-500">Total tagihan</span><strong class="text-2xl font-extrabold text-sky-700 dark:text-red-400" x-text="rupiah(grandTotal())"></strong></div>
