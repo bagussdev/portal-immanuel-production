@@ -39,12 +39,20 @@
     $discountAmount = $isInvoice ? ($document->discount_value ?? 0) : ($document->discount ?? 0);
     $discountMode = old('discount_mode', $document->discount_percent !== null ? 'percent' : 'amount');
     $taxMode = old('tax_mode', $document->tax_percent !== null ? 'percent' : 'amount');
+    $initialTotals = [
+        'discountMode' => $discountMode,
+        'discountPercent' => old('discount_percent', $document->discount_percent),
+        'discountValue' => old('discount_value', $discountAmount ?: ''),
+        'taxMode' => $taxMode,
+        'taxPercent' => old('tax_percent', $document->tax_percent),
+        'taxValue' => old('tax_value', $document->tax_value ?: ''),
+    ];
     $eventStart = old('event_date', optional($document->event_date ?: $sourceLocations->first()?->event_start_date)->format('Y-m-d'));
     $eventEnd = old('event_end_date', optional($document->event_end_date ?: $sourceLocations->first()?->event_end_date)->format('Y-m-d'));
 @endphp
 
 <form method="POST" action="{{ $action }}" id="documentForm" class="space-y-4" @submit="if (!validateItemNames()) $event.preventDefault()"
-    x-data="documentEditor(@js($initialLocations), @js($discountMode), @js($taxMode))">
+    x-data="documentEditor(@js($initialLocations), @js($initialTotals))">
     @csrf
     @if($method !== 'POST') @method($method) @endif
 
@@ -181,19 +189,15 @@
             <div class="space-y-4">
                 <div class="flex justify-between text-sm"><span>Subtotal</span><strong x-text="rupiah(subtotal())"></strong></div>
                 @foreach([['discount','Diskon',$discountAmount,$document->discount_percent],['tax','Potongan pajak',$document->tax_value,$document->tax_percent]] as [$prefix,$label,$amount,$percent])
-                    <div class="grid gap-2 rounded-xl border border-sky-100 p-3 dark:border-white/10 sm:grid-cols-[minmax(120px,1fr)_90px_minmax(140px,1fr)] sm:items-end">
+                    <div class="grid grid-cols-[minmax(0,1fr)_80px_minmax(0,1fr)] items-end gap-2">
                         <label class="text-xs font-semibold text-slate-500">{{ $label }}
                             <select name="{{ $prefix }}_mode" x-model="{{ $prefix }}Mode" class="ip-input mt-1 !py-2">
                                 <option value="percent">Persen</option>
                                 <option value="amount">Nominal</option>
                             </select>
                         </label>
-                        <label class="text-xs font-semibold text-slate-500" x-show="{{ $prefix }}Mode === 'percent'">Persen
-                            <input type="number" step="0.01" min="0" max="100" name="{{ $prefix }}_percent" value="{{ old($prefix.'_percent',$percent) }}" x-ref="{{ $prefix }}Percent" :disabled="{{ $prefix }}Mode !== 'percent'" class="ip-input mt-1 !py-2 text-right" placeholder="%">
-                        </label>
-                        <label class="text-xs font-semibold text-slate-500" x-show="{{ $prefix }}Mode === 'amount'">Nominal
-                            <input name="{{ $prefix }}_value" value="{{ old($prefix.'_value',$amount ?: '') }}" x-ref="{{ $prefix }}Value" :disabled="{{ $prefix }}Mode !== 'amount'" x-init="$el.value = money($el.value)" @input="$event.target.value = money($event.target.value)" class="ip-input mt-1 !py-2 text-right" placeholder="Rp 0">
-                        </label>
+                        <input type="number" step="0.01" min="0" max="100" name="{{ $prefix }}_percent" x-model="{{ $prefix }}Percent" :disabled="{{ $prefix }}Mode !== 'percent'" class="ip-input !py-2 text-right disabled:bg-slate-50 disabled:text-slate-300 dark:disabled:bg-white/[.03]" placeholder="%">
+                        <input name="{{ $prefix }}_value" x-model="{{ $prefix }}Value" :disabled="{{ $prefix }}Mode !== 'amount'" @input="$event.target.value = {{ $prefix }}Value = money($event.target.value)" inputmode="numeric" class="ip-input !py-2 text-right disabled:bg-slate-50 disabled:text-slate-300 dark:disabled:bg-white/[.03]" placeholder="Rp 0">
                     </div>
                 @endforeach
                 <div class="flex items-end justify-between border-t border-sky-100 pt-4"><span class="text-sm font-semibold text-slate-500">Total tagihan</span><strong class="text-2xl font-extrabold text-sky-700 dark:text-red-400" x-text="rupiah(grandTotal())"></strong></div>
@@ -204,7 +208,7 @@
 </form>
 
 <script>
-function documentEditor(initialLocations, discountMode, taxMode) {
+function documentEditor(initialLocations, initialTotals = {}) {
     const row = () => ({ key: crypto.randomUUID(), item_name: '', qty: 1, length: '', pricing_mode: 'unit', unit_price: '', line_total: '', merge_price: false });
     const overrides = () => ({ loading_date: false, teardown_date: false, work_flow: false });
     const site = () => ({ key: crypto.randomUUID(), name: '', loading_date: '', teardown_date: '', work_flow: 'install_teardown', _overrides: overrides(), items: [row()] });
@@ -218,10 +222,20 @@ function documentEditor(initialLocations, discountMode, taxMode) {
         };
     });
     return {
-        locations: normalized.length ? normalized : [site()], discountMode, taxMode,
+        locations: normalized.length ? normalized : [site()],
+        discountMode: initialTotals.discountMode || 'amount',
+        discountPercent: initialTotals.discountPercent ?? '',
+        discountValue: initialTotals.discountValue ?? '',
+        taxMode: initialTotals.taxMode || 'amount',
+        taxPercent: initialTotals.taxPercent ?? '',
+        taxValue: initialTotals.taxValue ?? '',
         itemModalOpen: false, editingItem: null, draftItemName: '', applyAllLocations: false,
         flowOptions: [{value:'install_teardown',label:'Pasang & Bongkar'},{value:'install_only',label:'Pasang saja'},{value:'one_way',label:'Sekali jalan'}],
-        init() { this.$nextTick(() => { this.setupSortables(); window.setupResponsiveDisclosures?.(this.$root) }) },
+        init() {
+            this.discountValue = this.raw(this.discountValue) ? this.money(this.discountValue) : '';
+            this.taxValue = this.raw(this.taxValue) ? this.money(this.taxValue) : '';
+            this.$nextTick(() => { this.setupSortables(); window.setupResponsiveDisclosures?.(this.$root) });
+        },
         addLocation() {
             const location = site();
             if (this.applyAllLocations) this.copyMasterTo(location);
@@ -310,8 +324,8 @@ function documentEditor(initialLocations, discountMode, taxMode) {
         displayLineTotal(item) { if (item.merge_price) return ''; const total = item.pricing_mode === 'total' ? this.raw(item.line_total) : this.calculatedLineTotal(item); return total > 0 ? this.money(total) : '' },
         lineTotal(item) { if (item.merge_price) return 0; return item.pricing_mode === 'total' ? this.raw(item.line_total) : this.calculatedLineTotal(item) },
         subtotal() { return this.locations.reduce((sum,location) => sum + location.items.reduce((value,item) => value + this.lineTotal(item),0),0) },
-        deduction(mode, percentRef, valueRef, base) { return mode === 'percent' ? Math.round(base * ((Number(percentRef?.value)||0)/100)) : this.raw(valueRef?.value) },
-        grandTotal() { const subtotal=this.subtotal(); const discount=Math.min(this.deduction(this.discountMode,this.$refs.discountPercent,this.$refs.discountValue,subtotal),subtotal); const after=Math.max(subtotal-discount,0); return Math.max(after-Math.min(this.deduction(this.taxMode,this.$refs.taxPercent,this.$refs.taxValue,after),after),0) }
+        deduction(mode, percent, value, base) { return mode === 'percent' ? Math.round(base * ((Number(percent)||0)/100)) : this.raw(value) },
+        grandTotal() { const subtotal=this.subtotal(); const discount=Math.min(this.deduction(this.discountMode,this.discountPercent,this.discountValue,subtotal),subtotal); const after=Math.max(subtotal-discount,0); return Math.max(after-Math.min(this.deduction(this.taxMode,this.taxPercent,this.taxValue,after),after),0) }
     }
 }
 </script>

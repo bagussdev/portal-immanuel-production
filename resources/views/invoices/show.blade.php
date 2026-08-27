@@ -104,7 +104,7 @@
                     @include('documents._location-items', ['document' => $invoice])
                 </x-responsive-disclosure>
 
-                <aside class="rounded-2xl bg-sky-950 p-5 text-white shadow-xl dark:bg-[#0b0c0f]">
+                <aside class="self-start rounded-2xl bg-sky-950 p-5 text-white shadow-xl dark:bg-[#0b0c0f]">
                     <p class="text-[11px] font-extrabold uppercase tracking-[.18em] text-sky-300 dark:text-red-400">Perhitungan</p>
                     <dl class="mt-5 space-y-3 text-sm">
                         <div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 text-slate-400"><dt>Subtotal</dt><dd class="whitespace-nowrap text-right font-bold tabular-nums text-white">{{ $rupiahOrBlank($invoice->subtotal) }}</dd></div>

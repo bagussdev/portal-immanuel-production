@@ -490,12 +490,12 @@ class ExpandedWorkflowTest extends TestCase
     public function test_invoice_discount_location_and_payment_references_are_rendered_correctly(): void
     {
         $admin = User::where('email', 'admin@immanuel.test')->firstOrFail();
-        $this->actingAs($admin)->post(route('invoices.store'), [
+        $payload = [
             'client_name' => 'Client Uji',
             'event_name' => 'Sound & Lighting',
             'event_date' => today()->addWeek()->toDateString(),
             'discount_mode' => 'amount',
-            'discount_value' => '18.200.000',
+            'discount_value' => '3.000.000',
             'tax_mode' => 'amount',
             'locations' => [[
                 'name' => 'Ubud & Sanur',
@@ -504,14 +504,24 @@ class ExpandedWorkflowTest extends TestCase
                     'item_name' => 'Paket produksi',
                     'qty' => 1,
                     'pricing_mode' => 'total',
-                    'line_total' => '21.200.000',
+                    'line_total' => '90.200.000',
                 ]],
             ]],
-        ])->assertRedirect();
+        ];
+        $this->actingAs($admin)->post(route('invoices.store'), $payload)->assertRedirect();
 
         $invoice = Invoice::latest('id')->firstOrFail();
+        $payload['discount_value'] = '18.200.000';
+        $this->put(route('invoices.update', $invoice), $payload)->assertRedirect();
+        $invoice->refresh();
         $this->assertSame(18_200_000, (int) $invoice->discount_value);
-        $this->assertSame(3_000_000, (int) $invoice->grand_total);
+        $this->assertSame(72_000_000, (int) $invoice->grand_total);
+
+        $this->get(route('invoices.edit', $invoice))->assertOk()
+            ->assertSee('x-model="discountValue"', false)
+            ->assertDontSee('x-ref="discountValue"', false);
+        $this->get(route('invoices.show', $invoice))->assertOk()
+            ->assertSee('self-start rounded-2xl bg-sky-950', false);
 
         $index = $this->get(route('invoices.index'))->assertOk();
         $index->assertSeeText('Ubud & Sanur')
@@ -540,6 +550,8 @@ class ExpandedWorkflowTest extends TestCase
 
         $pdfHtml = view('invoices.pdf', compact('invoice'))->render();
         $this->assertStringContainsString('DP 1', $pdfHtml);
+        $this->assertStringContainsString('Rp 18.200.000', $pdfHtml);
+        $this->assertStringContainsString('Rp 72.000.000', $pdfHtml);
         $this->assertStringNotContainsString('<td>Dibayar</td>', $pdfHtml);
     }
 }
