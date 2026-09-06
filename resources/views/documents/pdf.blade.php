@@ -42,6 +42,7 @@
     table.items thead { display:table-header-group; } table.items tr { page-break-inside:avoid; }
     table.items th { padding:5px 5px; border:1px solid #cbd5e1; background:#3b4a60; color:#fff; font-size:8px; letter-spacing:.4px; text-transform:uppercase; }
     table.items td { padding:4px 5px; border:1px solid #cbd5e1; vertical-align:top; line-height:1.3; } table.items tbody tr:nth-child(even) { background:#f8fafc; }
+    table.items td.group-price { background:#f1f5f9; vertical-align:middle; }
     .num,.qty,.size { text-align:center; } .price { text-align:right; white-space:nowrap; }
     .notes { margin:12px 0 0; padding:9px 11px; border:1px solid #cbd5e1; border-left:4px solid #94a3b8; background:#f8fafc; page-break-inside:avoid; }
     .final { width:100%; margin-top:14px; border-collapse:collapse; table-layout:fixed; page-break-inside:avoid; }
@@ -73,11 +74,28 @@
 </table></td></tr></table>
 
 @foreach($locations as $location)
-    @php($showUnitPrice = $location->items->contains(fn($item) => (int)$item->unit_price > 0))
+    @php
+        $showUnitPrice = $location->items->contains(fn($item) => (int)$item->unit_price > 0);
+        $priceGroupCounts = $location->items->whereNotNull('price_group')->countBy('price_group');
+        $renderedPriceGroups = [];
+    @endphp
     <section class="location">
         @if($multipleLocations)<div class="location-head"><span class="location-name">{{ $location->name ?: 'Lokasi belum ditentukan' }}</span>@unless($isInvoice)<span class="schedule">- Loading: {{ optional($location->loading_date)->format('d-m-Y') ?: '-' }}@if($location->teardown_date) | Bongkar: {{ optional($location->teardown_date)->format('d-m-Y') }}@endif</span>@endunless</div>@endif
         <table class="items"><thead><tr><th style="width:28px">No</th><th>Item</th><th style="width:48px">Qty</th><th style="width:55px">Size</th>@if($showUnitPrice)<th style="width:90px">Harga Satuan</th>@endif<th style="width:95px">Total</th></tr></thead><tbody>
-            @foreach($location->items as $item)<tr><td class="num">{{ $loop->iteration }}</td><td>{{ $item->item_name }}</td><td class="qty">{{ rtrim(rtrim(number_format((float)$item->qty,2,',','.'),'0'),',') }}</td><td class="size">{{ filled($item->length) && (float)$item->length > 0 ? rtrim(rtrim(number_format((float)$item->length,2,',','.'),'0'),',') : '' }}</td>@if($showUnitPrice)<td class="price">{{ $money($item->unit_price) }}</td>@endif<td class="price"><strong>{{ $money($item->total) }}</strong></td></tr>@endforeach
+            @foreach($location->items as $item)
+                <tr><td class="num">{{ $loop->iteration }}</td><td>{{ $item->item_name }}</td><td class="qty">{{ rtrim(rtrim(number_format((float)$item->qty,2,',','.'),'0'),',') }}</td><td class="size">{{ filled($item->length) && (float)$item->length > 0 ? rtrim(rtrim(number_format((float)$item->length,2,',','.'),'0'),',') : '' }}</td>
+                    @if($item->price_group)
+                        @if(!isset($renderedPriceGroups[$item->price_group]))
+                            @php($renderedPriceGroups[$item->price_group] = true)
+                            @if($showUnitPrice)<td rowspan="{{ $priceGroupCounts[$item->price_group] }}" class="price group-price">{{ $money($item->unit_price) }}</td>@endif
+                            <td rowspan="{{ $priceGroupCounts[$item->price_group] }}" class="price group-price"><strong>{{ $money($item->total) }}</strong></td>
+                        @endif
+                    @else
+                        @if($showUnitPrice)<td class="price">{{ $money($item->unit_price) }}</td>@endif
+                        <td class="price"><strong>{{ $money($item->total) }}</strong></td>
+                    @endif
+                </tr>
+            @endforeach
         </tbody></table>
     </section>
 @endforeach

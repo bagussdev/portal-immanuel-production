@@ -13,7 +13,7 @@
             </a>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <div class="min-w-0 rounded-lg bg-white p-4 shadow-md dark:bg-gray-800 sm:p-6">
             <div class="mb-4">
                 <h2 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">Create Payroll</h2>
                 <div class="text-sm text-gray-500">
@@ -52,7 +52,7 @@
                         </button>
                     </div>
 
-                    <div id="baseList" class="space-y-2 overflow-x-auto w-full">
+                    <div id="baseList" class="min-w-0 w-full space-y-2">
                     </div>
                     @error('bases')
                         <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
@@ -68,7 +68,7 @@
                         </button>
                     </div>
 
-                    <div id="dedList" class="space-y-2 overflow-x-auto w-full">
+                    <div id="dedList" class="min-w-0 w-full space-y-2">
                     </div>
                     @error('deductions')
                         <div class="text-red-600 text-xs mt-1">{{ $message }}</div>
@@ -103,16 +103,16 @@
         </div>
 
         <template id="tplBaseRow">
-            <div
-                class="base-row flex flex-nowrap items-center gap-2 border rounded-md p-2 dark:border-gray-700 w-full overflow-x-auto">
+            <div class="base-row grid w-full min-w-0 grid-cols-[minmax(0,1fr)_36px] items-center gap-2 rounded-md border p-2 dark:border-gray-700 sm:grid-cols-[minmax(0,1fr)_minmax(140px,220px)_36px]">
                 <input type="text" name="bases[name][]" placeholder="Nama komponen gaji (mis. Gaji Pokok/Tunjangan)"
-                    class="flex-1 min-w-[240px] rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" />
+                    class="col-span-2 w-full min-w-0 rounded-md border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:col-span-1" />
 
                 <input type="text" name="bases[amount][]" placeholder="0"
-                    class="rp flex-1 min-w-[240px] rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm text-right" />
+                    inputmode="numeric" autocomplete="off"
+                    class="rp w-full min-w-0 rounded-md border-gray-300 text-right text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
 
                 <button type="button" aria-label="Remove"
-                    class="btnDelBase shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-md border border-gray-300 dark:border-gray-600
+                    class="btnDelBase inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 dark:border-gray-600
                         hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600">
                     ×
                 </button>
@@ -120,14 +120,14 @@
         </template>
 
         <template id="tplDedRow">
-            <div
-                class="ded-row flex flex-nowrap items-center gap-2 border rounded-md p-2 dark:border-gray-700 w-full overflow-x-auto">
+            <div class="ded-row grid w-full min-w-0 grid-cols-[minmax(0,1fr)_36px] items-center gap-2 rounded-md border p-2 dark:border-gray-700 sm:grid-cols-[minmax(0,1fr)_minmax(140px,220px)_36px]">
                 <input type="text" name="deductions[name][]" placeholder="Nama potongan"
-                    class="flex-1 min-w-[240px] rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" />
+                    class="col-span-2 w-full min-w-0 rounded-md border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:col-span-1" />
                 <input type="text" name="deductions[amount][]" placeholder="0"
-                    class="rp flex-1 min-w-[240px] rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm text-right" />
+                    inputmode="numeric" autocomplete="off"
+                    class="rp w-full min-w-0 rounded-md border-gray-300 text-right text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
                 <button type="button" aria-label="Remove"
-                    class="btnDelRow shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-md border border-gray-300 dark:border-gray-600
+                    class="btnDelRow inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 dark:border-gray-600
                         hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600">
                     ×
                 </button>

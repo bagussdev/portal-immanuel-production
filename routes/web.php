@@ -69,7 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::post('payroll/period/open', [PayrollController::class, 'openPeriod'])->name('payroll.period.open');
     Route::patch('payroll/period/{period}/close', [PayrollController::class, 'closePeriod'])->name('payroll.period.close');
     Route::patch('payroll/period/{period}/reopen', [PayrollController::class, 'reopenPeriod'])->name('payroll.period.reopen');
-    Route::resource('payroll', PayrollController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update']);
+    Route::resource('payroll', PayrollController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
 
     Route::patch('expenses/period/{period}/close', [ExpenseController::class, 'periodClose'])->name('expenses.period.close');
     Route::patch('expenses/period/{period}/reopen', [ExpenseController::class, 'periodReopen'])->name('expenses.period.reopen');

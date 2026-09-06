@@ -45,6 +45,12 @@ class PayrollController extends Controller
         return ((int) now()->month === $month) && ((int) now()->year === $year);
     }
 
+    private function periodAcceptsChanges(Payroll $payroll): bool
+    {
+        return $payroll->period
+            && in_array($payroll->period->status, [PayrollPeriod::STATUS_OPEN, PayrollPeriod::STATUS_REOPEN], true);
+    }
+
     public function index(Request $request)
     {
         $this->authorize('payrollmenu');
@@ -144,9 +150,11 @@ class PayrollController extends Controller
         }
 
         if ($period) {
-            $rawLatest = Payroll::where('payroll_period_id', $period->id)
-                ->select(DB::raw('GREATEST(MAX(updated_at), MAX(created_at)) as ts'))
-                ->value('ts');
+            $periodPayrolls = Payroll::where('payroll_period_id', $period->id);
+            $rawLatest = collect([
+                (clone $periodPayrolls)->max('updated_at'),
+                (clone $periodPayrolls)->max('created_at'),
+            ])->filter()->max();
             $latestTs = $rawLatest ? Carbon::parse($rawLatest)->toIso8601String() : now()->toIso8601String();
         } else {
             $latestTs = null;
@@ -465,8 +473,11 @@ class PayrollController extends Controller
     public function edit(Request $r, Payroll $payroll)
     {
         $this->authorize('editpayroll');
-        if ($payroll->status !== Payroll::STATUS_DRAFT) {
-            return redirect()->route('payroll.show', $payroll)->with('error', 'Slip yang sudah dibayar tidak dapat diedit.');
+        if (! $this->periodAcceptsChanges($payroll)) {
+            return redirect()->route('payroll.show', $payroll)->with('error', 'Buka kembali periode sebelum mengedit slip.');
+        }
+        if ($payroll->status === Payroll::STATUS_PAID && ! $r->user()->can('managepayroll')) {
+            abort(403, 'Slip yang sudah dibayar hanya dapat diedit oleh pengelola penggajian.');
         }
         $users = User::select('id', 'name')->orderBy('name')->get();
 
@@ -478,16 +489,19 @@ class PayrollController extends Controller
             'users' => $users,
             'baseItems' => $baseItems,
             'deductionItems' => $deductionItems,
-            'month' => $r->integer('month') ?: $payroll->month,
-            'year' => $r->integer('year') ?: $payroll->year,
+            'month' => $r->integer('month') ?: $payroll->period?->month,
+            'year' => $r->integer('year') ?: $payroll->period?->year,
         ]);
     }
 
     public function update(Request $r, Payroll $payroll)
     {
         $this->authorize('editpayroll');
-        if ($payroll->status !== Payroll::STATUS_DRAFT) {
-            return redirect()->route('payroll.show', $payroll)->with('error', 'Slip yang sudah dibayar tidak dapat diedit.');
+        if (! $this->periodAcceptsChanges($payroll)) {
+            return redirect()->route('payroll.show', $payroll)->with('error', 'Buka kembali periode sebelum mengedit slip.');
+        }
+        if ($payroll->status === Payroll::STATUS_PAID && ! $r->user()->can('managepayroll')) {
+            abort(403, 'Slip yang sudah dibayar hanya dapat diedit oleh pengelola penggajian.');
         }
         $r->validate([
             'user_id' => ['required', 'exists:users,id'],
@@ -587,6 +601,21 @@ class PayrollController extends Controller
         ])->with('success', 'Payroll updated.');
     }
 
+    public function destroy(Payroll $payroll)
+    {
+        $this->authorize('managepayroll');
+        if (! $this->periodAcceptsChanges($payroll)) {
+            return redirect()->route('payroll.show', $payroll)->with('error', 'Buka kembali periode sebelum menghapus slip.');
+        }
+
+        $month = $payroll->period->month;
+        $year = $payroll->period->year;
+        $payroll->delete();
+
+        return redirect()->route('payroll.index', compact('month', 'year'))
+            ->with('success', 'Slip gaji berhasil dihapus.');
+    }
+
 
     protected function buildBaseQuery(Request $request)
     {
@@ -652,9 +681,10 @@ class PayrollController extends Controller
             $deleted = array_values(array_diff($visible, $existingVisible));
         }
 
-        $rawLatest = (clone $base)
-            ->select(DB::raw('GREATEST(MAX(payrolls.updated_at), MAX(payrolls.created_at)) as ts'))
-            ->value('ts');
+        $rawLatest = collect([
+            (clone $base)->max('payrolls.updated_at'),
+            (clone $base)->max('payrolls.created_at'),
+        ])->filter()->max();
 
         $latest = $rawLatest
             ? Carbon::parse($rawLatest)->toIso8601String()

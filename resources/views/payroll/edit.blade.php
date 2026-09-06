@@ -3,7 +3,7 @@
         <x-alert-information />
 
         <div class="mb-6">
-            <a href="{{ route('payroll.index', ['month' => $payroll->month, 'year' => $payroll->year]) }}"
+            <a href="{{ route('payroll.index', ['month' => $payroll->period?->month, 'year' => $payroll->period?->year]) }}"
                 onclick="showFullScreenLoader();"
                 class="inline-flex items-center text-sm text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -14,7 +14,7 @@
             </a>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <div class="min-w-0 rounded-lg bg-white p-4 shadow-md dark:bg-gray-800 sm:p-6">
             <div class="mb-4">
                 <h2 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">Edit Payroll</h2>
                 <div class="text-sm text-gray-500">
@@ -29,8 +29,8 @@
                 @csrf
                 @method('PUT')
 
-                <input type="hidden" name="month" value="{{ $payroll->month }}">
-                <input type="hidden" name="year" value="{{ $payroll->year }}">
+                <input type="hidden" name="month" value="{{ $payroll->period?->month }}">
+                <input type="hidden" name="year" value="{{ $payroll->period?->year }}">
                 <input type="hidden" name="user_id" value="{{ $payroll->user_id }}">
 
                 <div class="mb-5">
@@ -53,7 +53,7 @@
                         </button>
                     </div>
 
-                    <div id="baseList" class="space-y-2 w-full"></div>
+                    <div id="baseList" class="min-w-0 w-full space-y-2"></div>
                     <div id="baseDeleteBin"></div>
 
                     @error('bases')
@@ -70,7 +70,7 @@
                         </button>
                     </div>
 
-                    <div id="dedList" class="space-y-2 w-full"></div>
+                    <div id="dedList" class="min-w-0 w-full space-y-2"></div>
                     <div id="dedDeleteBin"></div>
 
                     @error('deductions')
@@ -106,35 +106,35 @@
         </div>
 
         <template id="tplBaseRow">
-            <div class="base-row flex flex-nowrap items-center gap-2 border rounded-md p-2 dark:border-gray-700 w-full">
+            <div class="base-row grid w-full min-w-0 grid-cols-[minmax(0,1fr)_36px] items-center gap-2 rounded-md border p-2 dark:border-gray-700 sm:grid-cols-[minmax(0,1fr)_minmax(140px,220px)_36px]">
                 <input type="hidden" name="bases[id][]">
 
                 <input type="text" name="bases[name][]" placeholder="Nama komponen gaji"
-                    class="flex-1 min-w-[220px] rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" />
+                    class="col-span-2 w-full min-w-0 rounded-md border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:col-span-1" />
 
                 <input type="text" name="bases[amount][]" placeholder="0"
-                    class="rp flex-1 min-w-[220px] rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm text-right"
+                    class="rp w-full min-w-0 rounded-md border-gray-300 text-right text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                     inputmode="numeric" autocomplete="off" />
 
                 <button type="button" aria-label="Remove"
-                    class="btnDelBase shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-md border border-gray-300 dark:border-gray-600
+                    class="btnDelBase inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 dark:border-gray-600
                         hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600">×</button>
             </div>
         </template>
 
         <template id="tplDedRow">
-            <div class="ded-row flex flex-nowrap items-center gap-2 border rounded-md p-2 dark:border-gray-700 w-full">
+            <div class="ded-row grid w-full min-w-0 grid-cols-[minmax(0,1fr)_36px] items-center gap-2 rounded-md border p-2 dark:border-gray-700 sm:grid-cols-[minmax(0,1fr)_minmax(140px,220px)_36px]">
                 <input type="hidden" name="deductions[id][]">
 
                 <input type="text" name="deductions[name][]" placeholder="Nama potongan"
-                    class="flex-1 min-w-[220px] rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" />
+                    class="col-span-2 w-full min-w-0 rounded-md border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:col-span-1" />
 
                 <input type="text" name="deductions[amount][]" placeholder="0"
-                    class="rp flex-1 min-w-[220px] rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm text-right"
+                    class="rp w-full min-w-0 rounded-md border-gray-300 text-right text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                     inputmode="numeric" autocomplete="off" />
 
                 <button type="button" aria-label="Remove"
-                    class="btnDelRow shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-md border border-gray-300 dark:border-gray-600
+                    class="btnDelRow inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 dark:border-gray-600
                         hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600">×</button>
             </div>
         </template>

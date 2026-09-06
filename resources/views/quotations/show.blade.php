@@ -1,6 +1,4 @@
 @php
-    $priceGroupCounts = $quotation->items->whereNotNull('price_group')->countBy('price_group');
-    $renderedPriceGroups = [];
     $rupiahOrBlank = fn ($value) => (int) $value > 0 ? 'Rp ' . number_format((int) $value, 0, ',', '.') : '';
 @endphp
 <x-app-layout>

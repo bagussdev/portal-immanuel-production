@@ -488,6 +488,74 @@ class ExpandedWorkflowTest extends TestCase
         $this->assertSame(3, $period->payrolls()->where('paid_by', $master->id)->count());
     }
 
+    public function test_paid_payroll_can_be_edited_and_deleted_by_a_payroll_manager(): void
+    {
+        $master = User::where('email', 'master@immanuel.test')->firstOrFail();
+        $mandor = User::where('email', 'mandor@immanuel.test')->firstOrFail();
+        $crew = User::where('email', 'user@immanuel.test')->firstOrFail();
+        $period = PayrollPeriod::create([
+            'month' => now()->month,
+            'year' => now()->year,
+            'status' => PayrollPeriod::STATUS_OPEN,
+            'open_by' => $master->id,
+            'open_at' => now(),
+        ]);
+        $payroll = Payroll::create([
+            'payroll_period_id' => $period->id,
+            'user_id' => $crew->id,
+            'status' => Payroll::STATUS_PAID,
+            'paid_at' => now(),
+            'paid_by' => $master->id,
+        ]);
+        $item = $payroll->items()->create(['type' => 'base', 'name' => 'Gaji Pokok', 'amount' => 1_000_000]);
+
+        $this->actingAs($master)->get(route('payroll.edit', $payroll))->assertOk()
+            ->assertSee('grid-cols-[minmax(0,1fr)_36px]', false)
+            ->assertDontSee('min-w-[220px]', false);
+        $this->get(route('payroll.index', ['month' => $period->month, 'year' => $period->year]))->assertOk()
+            ->assertSee(route('payroll.destroy', $payroll), false);
+        $this->get(route('payroll.show', $payroll))->assertOk()
+            ->assertSee(route('payroll.destroy', $payroll), false);
+
+        $this->put(route('payroll.update', $payroll), [
+            'user_id' => $crew->id,
+            'bases' => [
+                'id' => [$item->id],
+                'name' => ['Gaji dan tunjangan'],
+                'amount' => ['1.500.000'],
+            ],
+            'notes' => 'Transfer dikoreksi',
+        ])->assertRedirect();
+
+        $payroll->refresh();
+        $this->assertSame(Payroll::STATUS_PAID, $payroll->status);
+        $this->assertSame(1_500_000, (int) $payroll->net_pay);
+        $this->assertNotNull($payroll->paid_at);
+        $this->actingAs($mandor)->get(route('payroll.edit', $payroll))->assertForbidden();
+
+        $this->actingAs($master)->delete(route('payroll.destroy', $payroll))->assertRedirect();
+        $this->assertDatabaseMissing('payrolls', ['id' => $payroll->id]);
+        $this->assertDatabaseMissing('payroll_items', ['id' => $item->id]);
+    }
+
+    public function test_create_payroll_rows_fit_the_mobile_viewport(): void
+    {
+        $master = User::where('email', 'master@immanuel.test')->firstOrFail();
+        PayrollPeriod::create([
+            'month' => now()->month,
+            'year' => now()->year,
+            'status' => PayrollPeriod::STATUS_OPEN,
+            'open_by' => $master->id,
+            'open_at' => now(),
+        ]);
+
+        $this->actingAs($master)->get(route('payroll.create', ['month' => now()->month, 'year' => now()->year]))
+            ->assertOk()
+            ->assertSee('grid-cols-[minmax(0,1fr)_36px]', false)
+            ->assertDontSee('min-w-[240px]', false)
+            ->assertDontSee('overflow-x-auto w-full', false);
+    }
+
     public function test_invoice_discount_location_and_payment_references_are_rendered_correctly(): void
     {
         $admin = User::where('email', 'admin@immanuel.test')->firstOrFail();

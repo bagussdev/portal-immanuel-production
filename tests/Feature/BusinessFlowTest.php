@@ -243,7 +243,11 @@ class BusinessFlowTest extends TestCase
         $this->assertSame($quotation->items[0]->price_group, $quotation->items[1]->price_group);
         $quotation->update(['location_event' => 'Denpasar']);
 
-        $this->get(route('quotations.show', $quotation))->assertOk()->assertSee('Zakharia Sugito Kurniawan');
+        $this->get(route('quotations.show', $quotation))->assertOk()
+            ->assertSee('Zakharia Sugito Kurniawan')
+            ->assertSee('rowspan="2"', false);
+        $quotation->load('locations.items');
+        $this->assertStringContainsString('rowspan="2"', view('quotations.pdf', compact('quotation'))->render());
         $quotationPdf = $this->get(route('quotations.export.pdf', $quotation))->assertOk();
         $this->assertStringContainsString(
             'Quotation Bapak Widhi di Denpasar '.str($quotation->quotation_number)->afterLast('/').' '.$quotation->quotation_date->format('d-m-Y').'.pdf',
@@ -259,7 +263,11 @@ class BusinessFlowTest extends TestCase
         $this->assertSame($bankDetail->id, $invoice->bank_detail_id);
         $this->assertSame(23_000_000, (int) $invoice->subtotal);
         $this->assertSame($invoice->items[0]->price_group, $invoice->items[1]->price_group);
-        $this->get(route('invoices.show', $invoice))->assertOk()->assertSee('0490392947');
+        $this->get(route('invoices.show', $invoice))->assertOk()
+            ->assertSee('0490392947')
+            ->assertSee('rowspan="2"', false);
+        $invoice->load('locations.items');
+        $this->assertStringContainsString('rowspan="2"', view('invoices.pdf', compact('invoice'))->render());
         $invoicePdf = $this->get(route('invoices.export.pdf', $invoice))->assertOk();
         $this->assertStringContainsString(
             'Invoice Bapak Widhi di Denpasar INV0001 '.today()->format('d-m-Y').'.pdf',

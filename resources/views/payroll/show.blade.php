@@ -4,7 +4,7 @@
 
         {{-- BACK --}}
         <div class="mb-6">
-            <a href="{{ route('payroll.index', ['month' => $payroll->month, 'year' => $payroll->year]) }}"
+            <a href="{{ route('payroll.index', ['month' => $payroll->period?->month, 'year' => $payroll->period?->year]) }}"
                 onclick="showFullScreenLoader();"
                 class="inline-flex items-center text-sm text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -25,6 +25,9 @@
             $dedTotal = (int) ($deductionItems->sum('amount') ?? 0);
             $net = $baseTotal - $dedTotal;
             $idr = fn($n) => number_format((int) $n, 0, ',', '.');
+            $periodEditable = in_array(strtolower((string) $payroll->period?->status), ['open', 'reopen'], true);
+            $canEditPayroll = $periodEditable
+                && ($payroll->status === \App\Models\Payroll::STATUS_DRAFT || auth()->user()->can('managepayroll'));
         @endphp
 
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -184,9 +187,20 @@
             </div>
 
             {{-- Actions (BOTTOM) --}}
-            <div class="mt-6 flex">
+            <div class="mt-6 flex flex-wrap gap-2">
                 <x-action-button as="a" href="{{ route('payroll.slip.pdf', $payroll) }}" target="_blank"
                     text="Export PDF" color="yellow" />
+                @can('editpayroll')
+                    @if($canEditPayroll)<x-action-button as="a" href="{{ route('payroll.edit', ['payroll' => $payroll, 'month' => $payroll->period?->month, 'year' => $payroll->period?->year]) }}" text="Edit" color="green" />@endif
+                @endcan
+                @can('managepayroll')
+                    @if($periodEditable)
+                        <form action="{{ route('payroll.destroy', $payroll) }}" method="POST" onsubmit="return confirmAndLoad('Hapus slip gaji ini?')">
+                            @csrf @method('DELETE')
+                            <x-action-button color="red" text="Hapus" />
+                        </form>
+                    @endif
+                @endcan
             </div>
         </div>
     </x-dashboard.sidebar>

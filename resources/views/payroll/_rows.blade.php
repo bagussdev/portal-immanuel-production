@@ -12,7 +12,9 @@
         $status = strtolower((string) $row->status); // draft|paid
         $periodStatus = strtolower($period->status ?? '');
         $isPaid = $status === 'paid';
-        $canEdit = in_array($periodStatus, ['open', 'reopen'], true) && !$isPaid;
+        $periodEditable = in_array($periodStatus, ['open', 'reopen'], true);
+        $canEdit = $periodEditable && (!$isPaid || auth()->user()->can('managepayroll'));
+        $canDelete = $periodEditable && auth()->user()->can('managepayroll');
         $canAdd = in_array($periodStatus, ['open', 'reopen'], true);
     @endphp
     <tr data-id="{{ $row->id }}">
@@ -27,7 +29,7 @@
                 <x-action-button :href="route('payroll.show', ['payroll' => $row->id, 'month' => $month, 'year' => $year])" onclick="showFullScreenLoader();" color="blue" text="Detail" :dense="true" />
 
                 @can('editpayroll')
-                    <x-action-button :href="route('payroll.edit', ['payroll' => $row->id, 'month' => $month, 'year' => $year])" onclick="showFullScreenLoader();" class="{{ $canEdit ? '' : 'pointer-events-none opacity-50' }}" color="green" text="Edit" :dense="true" />
+                    @if($canEdit)<x-action-button :href="route('payroll.edit', ['payroll' => $row->id, 'month' => $month, 'year' => $year])" onclick="showFullScreenLoader();" color="green" text="Edit" :dense="true" />@endif
                 @endcan
 
                 @can('paypayroll')
@@ -40,6 +42,13 @@
                         </form>
                     @endif
                 @endcan
+
+                @if($canDelete)
+                    <form action="{{ route('payroll.destroy', $row) }}" method="POST" onsubmit="return confirmAndLoad('Hapus slip gaji {{ $row->user->name ?? '' }}?')">
+                        @csrf @method('DELETE')
+                        <x-action-button color="red" text="Hapus" :dense="true" />
+                    </form>
+                @endif
             </div>
         </td>
     </tr>
