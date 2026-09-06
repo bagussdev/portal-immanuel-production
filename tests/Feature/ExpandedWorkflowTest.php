@@ -510,7 +510,9 @@ class ExpandedWorkflowTest extends TestCase
         $item = $payroll->items()->create(['type' => 'base', 'name' => 'Gaji Pokok', 'amount' => 1_000_000]);
 
         $this->actingAs($master)->get(route('payroll.edit', $payroll))->assertOk()
-            ->assertSee('grid-cols-[minmax(0,1fr)_36px]', false)
+            ->assertSee('min-w-[520px]', false)
+            ->assertSee('overflow-x-auto', false)
+            ->assertDontSee('col-span-2', false)
             ->assertDontSee('min-w-[220px]', false);
         $this->get(route('payroll.index', ['month' => $period->month, 'year' => $period->year]))->assertOk()
             ->assertSee(route('payroll.destroy', $payroll), false);
@@ -538,7 +540,7 @@ class ExpandedWorkflowTest extends TestCase
         $this->assertDatabaseMissing('payroll_items', ['id' => $item->id]);
     }
 
-    public function test_create_payroll_rows_fit_the_mobile_viewport(): void
+    public function test_create_payroll_rows_stay_inline_and_scroll_on_mobile(): void
     {
         $master = User::where('email', 'master@immanuel.test')->firstOrFail();
         PayrollPeriod::create([
@@ -551,9 +553,11 @@ class ExpandedWorkflowTest extends TestCase
 
         $this->actingAs($master)->get(route('payroll.create', ['month' => now()->month, 'year' => now()->year]))
             ->assertOk()
-            ->assertSee('grid-cols-[minmax(0,1fr)_36px]', false)
+            ->assertSee('min-w-[520px]', false)
+            ->assertSee('overflow-x-auto', false)
+            ->assertDontSee('col-span-2', false)
             ->assertDontSee('min-w-[240px]', false)
-            ->assertDontSee('overflow-x-auto w-full', false);
+            ->assertDontSee('grid-cols-[minmax(0,1fr)_36px]', false);
     }
 
     public function test_invoice_discount_location_and_payment_references_are_rendered_correctly(): void

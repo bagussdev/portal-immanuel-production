@@ -53,7 +53,7 @@
                         </button>
                     </div>
 
-                    <div id="baseList" class="min-w-0 w-full space-y-2"></div>
+                    <div id="baseList" class="w-full space-y-2 overflow-x-auto pb-2"></div>
                     <div id="baseDeleteBin"></div>
 
                     @error('bases')
@@ -70,7 +70,7 @@
                         </button>
                     </div>
 
-                    <div id="dedList" class="min-w-0 w-full space-y-2"></div>
+                    <div id="dedList" class="w-full space-y-2 overflow-x-auto pb-2"></div>
                     <div id="dedDeleteBin"></div>
 
                     @error('deductions')
@@ -106,11 +106,11 @@
         </div>
 
         <template id="tplBaseRow">
-            <div class="base-row grid w-full min-w-0 grid-cols-[minmax(0,1fr)_36px] items-center gap-2 rounded-md border p-2 dark:border-gray-700 sm:grid-cols-[minmax(0,1fr)_minmax(140px,220px)_36px]">
+            <div class="base-row grid w-full min-w-[520px] grid-cols-[minmax(260px,1fr)_minmax(160px,220px)_36px] items-center gap-2 rounded-md border p-2 dark:border-gray-700">
                 <input type="hidden" name="bases[id][]">
 
                 <input type="text" name="bases[name][]" placeholder="Nama komponen gaji"
-                    class="col-span-2 w-full min-w-0 rounded-md border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:col-span-1" />
+                    class="w-full min-w-0 rounded-md border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
 
                 <input type="text" name="bases[amount][]" placeholder="0"
                     class="rp w-full min-w-0 rounded-md border-gray-300 text-right text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
@@ -123,11 +123,11 @@
         </template>
 
         <template id="tplDedRow">
-            <div class="ded-row grid w-full min-w-0 grid-cols-[minmax(0,1fr)_36px] items-center gap-2 rounded-md border p-2 dark:border-gray-700 sm:grid-cols-[minmax(0,1fr)_minmax(140px,220px)_36px]">
+            <div class="ded-row grid w-full min-w-[520px] grid-cols-[minmax(260px,1fr)_minmax(160px,220px)_36px] items-center gap-2 rounded-md border p-2 dark:border-gray-700">
                 <input type="hidden" name="deductions[id][]">
 
                 <input type="text" name="deductions[name][]" placeholder="Nama potongan"
-                    class="col-span-2 w-full min-w-0 rounded-md border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:col-span-1" />
+                    class="w-full min-w-0 rounded-md border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
 
                 <input type="text" name="deductions[amount][]" placeholder="0"
                     class="rp w-full min-w-0 rounded-md border-gray-300 text-right text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
