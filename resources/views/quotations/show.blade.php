@@ -60,8 +60,6 @@
                         <dl class="space-y-3 text-sm">
                             <div><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Lokasi</dt><dd class="mt-0.5 font-semibold text-slate-700 dark:text-slate-300">{{ $quotation->location_event ?: '-' }}</dd></div>
                             <div><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Acara</dt><dd class="mt-0.5 font-semibold text-slate-700 dark:text-slate-300"><x-date-range :start="$quotation->event_date" :end="$quotation->event_end_date" /></dd></div>
-                            <div><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Loading</dt><dd class="mt-0.5 font-semibold text-slate-700 dark:text-slate-300">{{ optional($quotation->loading_date)->translatedFormat('d F Y H:i') ?: '-' }}</dd></div>
-                            <div><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Bongkar</dt><dd class="mt-0.5 font-semibold text-slate-700 dark:text-slate-300">{{ optional($quotation->bongkaran_date)->translatedFormat('d F Y H:i') ?: '-' }}</dd></div>
                         </dl>
                     </x-responsive-disclosure>
                     @include('documents._bank-detail-card', ['bankDetail' => $quotation->bankDetail])

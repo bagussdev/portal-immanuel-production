@@ -245,9 +245,18 @@ class BusinessFlowTest extends TestCase
 
         $this->get(route('quotations.show', $quotation))->assertOk()
             ->assertSee('Zakharia Sugito Kurniawan')
+            ->assertDontSee('>Loading<', false)
+            ->assertDontSee('>Bongkar<', false)
+            ->assertDontSee('Loading:', false)
+            ->assertDontSee('Bongkar:', false)
             ->assertSee('rowspan="2"', false);
         $quotation->load('locations.items');
-        $this->assertStringContainsString('rowspan="2"', view('quotations.pdf', compact('quotation'))->render());
+        $quotationPdfHtml = view('quotations.pdf', compact('quotation'))->render();
+        $this->assertStringContainsString('rowspan="2"', $quotationPdfHtml);
+        $this->assertStringNotContainsString('<td>Loading</td>', $quotationPdfHtml);
+        $this->assertStringNotContainsString('<td>Bongkar</td>', $quotationPdfHtml);
+        $this->assertStringNotContainsString('Loading:', $quotationPdfHtml);
+        $this->assertStringNotContainsString('Bongkar:', $quotationPdfHtml);
         $quotationPdf = $this->get(route('quotations.export.pdf', $quotation))->assertOk();
         $this->assertStringContainsString(
             'Quotation Bapak Widhi di Denpasar '.str($quotation->quotation_number)->afterLast('/').' '.$quotation->quotation_date->format('d-m-Y').'.pdf',

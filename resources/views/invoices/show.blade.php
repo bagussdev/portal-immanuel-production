@@ -111,9 +111,7 @@
                         <div class="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 border-t border-white/10 pt-4"><dt class="font-bold">Total</dt><dd class="whitespace-nowrap text-right text-lg font-extrabold tabular-nums sm:text-xl">{{ $rupiahOrBlank($invoice->grand_total) }}</dd></div>
                     </dl>
                     <div class="mt-6 space-y-2 border-t border-white/10 pt-5 text-xs text-slate-400">
-                        <p><strong class="text-slate-200">Loading:</strong> {{ optional($invoice->loading_date)->translatedFormat('d M Y H:i') ?: '-' }}</p>
                         <p><strong class="text-slate-200">Acara:</strong> <x-date-range :start="$invoice->event_date" :end="$invoice->event_end_date" /></p>
-                        <p><strong class="text-slate-200">Bongkar:</strong> {{ optional($invoice->bongkaran_date)->translatedFormat('d M Y H:i') ?: '-' }}</p>
                     </div>
                 </aside>
             </div>
