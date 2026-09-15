@@ -18,6 +18,7 @@
                 <dl class="grid grid-cols-2 gap-3 text-sm">
                     <div class="rounded-xl bg-slate-50 p-3 dark:bg-white/[.04]"><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Tanggal quotation</dt><dd class="mt-1 text-xs font-extrabold text-slate-800 dark:text-slate-200"><x-date-range :start="$quotation->quotation_date ?: $quotation->created_at" /></dd></div>
                     <div class="rounded-xl bg-slate-50 p-3 dark:bg-white/[.04]"><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Tanggal event</dt><dd class="mt-1 text-xs font-extrabold text-slate-800 dark:text-slate-200"><x-date-range :start="$quotation->event_date" :end="$quotation->event_end_date" /></dd></div>
+                    <div class="col-span-2 rounded-xl bg-slate-50 p-3 dark:bg-white/[.04]"><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Dibuat oleh</dt><dd class="mt-1 text-xs font-extrabold text-slate-800 dark:text-slate-200">{{ $quotation->user?->name ?: '-' }}</dd></div>
                     <div class="rounded-xl bg-sky-50 p-3 text-right dark:bg-white/[.04]"><dt class="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Total</dt><dd class="mt-1 font-extrabold text-slate-900 dark:text-white">Rp {{ number_format($quotation->grand_total,0,',','.') }}</dd></div>
                 </dl>
                 <a href="{{ route('quotations.show',$quotation) }}" class="ip-btn-primary mt-4 w-full">Lihat detail quotation</a>
@@ -32,7 +33,7 @@
         @endforelse
     </div>
     <div class="ip-card">
-        <div class="ip-table-wrap hidden md:block"><table class="ip-table min-w-[1120px]"><thead><tr><th>Nomor</th><th>Client</th><th>Acara</th><th>Tgl quotation</th><th>Tgl event</th><th>Status</th><th class="text-right">Total</th><th class="text-right">Aksi</th></tr></thead><tbody>@forelse($quotations as $quotation)@include('quotations._rows',['quotations'=>collect([$quotation])])@empty<tr><td colspan="8" class="py-14 text-center text-slate-500">Belum ada quotation. Mulai dari penawaran pertama.</td></tr>@endforelse</tbody></table></div>
+        <div class="ip-table-wrap hidden md:block"><table class="ip-table min-w-[1240px]"><thead><tr><th>Nomor</th><th>Client</th><th>Acara</th><th>Tgl quotation</th><th>Tgl event</th><th>Dibuat oleh</th><th>Status</th><th class="text-right">Total</th><th class="text-right">Aksi</th></tr></thead><tbody>@forelse($quotations as $quotation)@include('quotations._rows',['quotations'=>collect([$quotation])])@empty<tr><td colspan="9" class="py-14 text-center text-slate-500">Belum ada quotation. Mulai dari penawaran pertama.</td></tr>@endforelse</tbody></table></div>
         <div class="border-t border-slate-200 p-4 dark:border-white/10">{{ $quotations->links() }}</div>
     </div>
 </div>

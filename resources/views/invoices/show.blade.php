@@ -21,6 +21,7 @@
                         <div class="mt-3 flex flex-wrap gap-2 text-[11px] font-bold text-white">
                             <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">Invoice: <x-date-range :start="$invoice->issue_date ?: $invoice->created_at" class="ml-1" /></span>
                             <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">Event: <x-date-range :start="$invoice->event_date" :end="$invoice->event_end_date" class="ml-1" /></span>
+                            <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">Dibuat oleh: <span class="ml-1">{{ $invoice->creator?->name ?: '-' }}</span></span>
                             <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">{{ $invoice->workFlowLabel() }}</span>
                         </div>
                     </div>

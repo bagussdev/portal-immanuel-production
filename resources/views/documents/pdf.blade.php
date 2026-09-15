@@ -25,6 +25,7 @@
     $singleLocation = $locations->first();
     $eventStart = $document->event_date ?: $singleLocation?->event_start_date;
     $eventEnd = $document->event_end_date ?: $singleLocation?->event_end_date;
+    $createdBy = $isInvoice ? $document->creator?->name : $document->user?->name;
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -392,6 +393,10 @@
                             <tr>
                                 <td>{{ $isInvoice ? 'Invoice Date' : 'Quotation Date' }}</td>
                                 <td>: {{ $date?->format('d-m-Y') }}</td>
+                            </tr>
+                            <tr>
+                                <td>Dibuat oleh</td>
+                                <td>: {{ $createdBy ?: '-' }}</td>
                             </tr>
                             @if ($multipleLocations)
                                 <tr>

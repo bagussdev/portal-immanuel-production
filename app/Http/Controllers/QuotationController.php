@@ -171,7 +171,7 @@ class QuotationController extends Controller
     public function exportPdf(Request $request, Quotation $quotation, ?string $filename = null)
     {
         $this->authorize('quotationmenu');
-        $quotation->load(['client', 'bankDetail', 'locations.items', 'items']);
+        $quotation->load(['client', 'bankDetail', 'user', 'locations.items', 'items']);
         $filename = $quotation->pdfFilename();
         $pdf = Pdf::loadView('quotations.pdf', compact('quotation'));
 

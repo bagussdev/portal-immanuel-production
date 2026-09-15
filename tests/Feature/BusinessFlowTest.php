@@ -243,8 +243,13 @@ class BusinessFlowTest extends TestCase
         $this->assertSame($quotation->items[0]->price_group, $quotation->items[1]->price_group);
         $quotation->update(['location_event' => 'Denpasar']);
 
+        $this->get(route('quotations.index'))->assertOk()
+            ->assertSeeText('Dibuat oleh')
+            ->assertSeeText($admin->name);
         $this->get(route('quotations.show', $quotation))->assertOk()
             ->assertSee('Zakharia Sugito Kurniawan')
+            ->assertSeeText('Dibuat oleh')
+            ->assertSeeText($admin->name)
             ->assertDontSee('>Loading<', false)
             ->assertDontSee('>Bongkar<', false)
             ->assertDontSee('Loading:', false)
@@ -253,6 +258,8 @@ class BusinessFlowTest extends TestCase
         $quotation->load('locations.items');
         $quotationPdfHtml = view('quotations.pdf', compact('quotation'))->render();
         $this->assertStringContainsString('rowspan="2"', $quotationPdfHtml);
+        $this->assertStringContainsString('Dibuat oleh', $quotationPdfHtml);
+        $this->assertStringContainsString($admin->name, $quotationPdfHtml);
         $this->assertStringNotContainsString('<td>Loading</td>', $quotationPdfHtml);
         $this->assertStringNotContainsString('<td>Bongkar</td>', $quotationPdfHtml);
         $this->assertStringNotContainsString('Loading:', $quotationPdfHtml);
@@ -272,11 +279,19 @@ class BusinessFlowTest extends TestCase
         $this->assertSame($bankDetail->id, $invoice->bank_detail_id);
         $this->assertSame(23_000_000, (int) $invoice->subtotal);
         $this->assertSame($invoice->items[0]->price_group, $invoice->items[1]->price_group);
+        $this->get(route('invoices.index'))->assertOk()
+            ->assertSeeText('Dibuat oleh')
+            ->assertSeeText($admin->name);
         $this->get(route('invoices.show', $invoice))->assertOk()
             ->assertSee('0490392947')
+            ->assertSeeText('Dibuat oleh')
+            ->assertSeeText($admin->name)
             ->assertSee('rowspan="2"', false);
         $invoice->load('locations.items');
-        $this->assertStringContainsString('rowspan="2"', view('invoices.pdf', compact('invoice'))->render());
+        $invoicePdfHtml = view('invoices.pdf', compact('invoice'))->render();
+        $this->assertStringContainsString('rowspan="2"', $invoicePdfHtml);
+        $this->assertStringContainsString('Dibuat oleh', $invoicePdfHtml);
+        $this->assertStringContainsString($admin->name, $invoicePdfHtml);
         $invoicePdf = $this->get(route('invoices.export.pdf', $invoice))->assertOk();
         $this->assertStringContainsString(
             'Invoice Bapak Widhi di Denpasar INV0001 '.today()->format('d-m-Y').'.pdf',

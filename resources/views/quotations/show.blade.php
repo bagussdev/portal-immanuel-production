@@ -17,6 +17,7 @@
                         <div class="mt-3 flex flex-wrap gap-2 text-[11px] font-bold text-white">
                             <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">Quotation: <x-date-range :start="$quotation->quotation_date ?: $quotation->created_at" class="ml-1" /></span>
                             <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">Event: <x-date-range :start="$quotation->event_date" :end="$quotation->event_end_date" class="ml-1" /></span>
+                            <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1">Dibuat oleh: <span class="ml-1">{{ $quotation->user?->name ?: '-' }}</span></span>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
