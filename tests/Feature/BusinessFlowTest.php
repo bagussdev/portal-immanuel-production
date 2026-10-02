@@ -258,8 +258,7 @@ class BusinessFlowTest extends TestCase
         $quotation->load('locations.items');
         $quotationPdfHtml = view('quotations.pdf', compact('quotation'))->render();
         $this->assertStringContainsString('rowspan="2"', $quotationPdfHtml);
-        $this->assertStringContainsString('Dibuat oleh', $quotationPdfHtml);
-        $this->assertStringContainsString($admin->name, $quotationPdfHtml);
+        $this->assertStringNotContainsString('Dibuat oleh', $quotationPdfHtml);
         $this->assertStringNotContainsString('<td>Loading</td>', $quotationPdfHtml);
         $this->assertStringNotContainsString('<td>Bongkar</td>', $quotationPdfHtml);
         $this->assertStringNotContainsString('Loading:', $quotationPdfHtml);
@@ -290,8 +289,7 @@ class BusinessFlowTest extends TestCase
         $invoice->load('locations.items');
         $invoicePdfHtml = view('invoices.pdf', compact('invoice'))->render();
         $this->assertStringContainsString('rowspan="2"', $invoicePdfHtml);
-        $this->assertStringContainsString('Dibuat oleh', $invoicePdfHtml);
-        $this->assertStringContainsString($admin->name, $invoicePdfHtml);
+        $this->assertStringNotContainsString('Dibuat oleh', $invoicePdfHtml);
         $invoicePdf = $this->get(route('invoices.export.pdf', $invoice))->assertOk();
         $this->assertStringContainsString(
             'Invoice Bapak Widhi di Denpasar INV0001 '.today()->format('d-m-Y').'.pdf',

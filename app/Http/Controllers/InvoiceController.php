@@ -285,7 +285,7 @@ class InvoiceController extends Controller
     public function exportPdf(Request $request, Invoice $invoice, ?string $filename = null)
     {
         $this->authorize('invoicemenu');
-        $invoice->load(['client', 'bankDetail', 'creator', 'locations.items', 'items', 'payments' => fn ($q) => $q->whereNull('voided_at')->orderBy('paid_at')]);
+        $invoice->load(['client', 'bankDetail', 'locations.items', 'items', 'payments' => fn ($q) => $q->whereNull('voided_at')->orderBy('paid_at')]);
         $filename = $invoice->pdfFilename();
         $pdf = Pdf::loadView('invoices.pdf', compact('invoice'));
 
